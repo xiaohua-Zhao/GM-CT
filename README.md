@@ -53,6 +53,8 @@ attachments/yyyy/MM/dd/
 
 ## 数据库
 
-数据库名：`user`
+数据库名：`ct_gm`（正式表使用 `t_ct_*` / `t_sys_*` 前缀）
 
 本地配置位于 `server/src/main/resources/application-local.yml`，该文件不会提交到 Git。
+
+

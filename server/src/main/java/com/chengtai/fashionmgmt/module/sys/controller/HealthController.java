@@ -1,4 +1,4 @@
-package com.chengtai.fashionmgmt.module.system.controller;
+package com.chengtai.fashionmgmt.module.sys.controller;
 
 import com.chengtai.fashionmgmt.common.Result;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +13,9 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * 系统健康检查接口。
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api")
@@ -26,6 +29,9 @@ public class HealthController {
     @Value("${file.attachment.root:./attachments}")
     private String attachmentRoot;
 
+    /**
+     * 检查 Spring Boot、ct_gm 数据库、日志和附件目录状态。
+     */
     @GetMapping("/health")
     public Result<Map<String, Object>> health() {
         Map<String, Object> data = new LinkedHashMap<>();
@@ -36,12 +42,12 @@ public class HealthController {
         try {
             Integer value = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
             data.put("database", value != null && value == 1 ? "UP" : "DOWN");
-            data.put("databaseName", "user");
-            log.info("健康检查成功，数据库连接正常");
+            data.put("databaseName", "ct_gm");
+            log.info("健康检查成功，ct_gm 数据库连接正常");
         } catch (Exception ex) {
             data.put("database", "DOWN");
             data.put("databaseError", ex.getMessage());
-            log.error("健康检查失败，数据库连接异常", ex);
+            log.error("健康检查失败，ct_gm 数据库连接异常", ex);
         }
         return Result.success("系统运行正常", data);
     }
