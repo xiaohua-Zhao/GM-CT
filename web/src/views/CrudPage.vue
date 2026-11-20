@@ -45,7 +45,7 @@
             </el-tag>
             <el-tag v-else-if="column.type === 'option'" type="info">{{ optionLabel(column, row[column.prop]) }}</el-tag>
             <span v-else-if="column.type === 'money'">{{ formatMoney(row[column.prop]) }}</span>
-            <span v-else-if="column.prop === 'updatedAt'">{{ formatDateTime(row[column.prop]) }}</span>
+            <span v-else-if="column.type === 'datetime' || column.prop === 'updatedAt'">{{ formatDateTime(row[column.prop]) }}</span>
             <span v-else>{{ display(row[column.prop]) }}</span>
           </template>
         </el-table-column>
@@ -77,7 +77,8 @@
             v-if="field.type === 'number'"
             v-model="form[field.prop]"
             :min="0"
-            :precision="field.prop === 'unitPrice' || field.prop === 'safetyStock' ? 2 : 0"
+            :precision="inputPrecision(field)"
+            :step="inputStep(field)"
             style="width: 100%"
           />
           <el-select v-else-if="field.type === 'select'" v-model="form[field.prop]" style="width: 100%">
@@ -125,6 +126,16 @@ function optionLabel(column, value) {
 }
 function formatMoney(value) {
   return value === null || value === undefined ? '—' : `¥${Number(value).toFixed(2)}`
+}
+const decimalInputFields = new Set([
+  'unitPrice', 'safetyStock', 'stdPrice', 'taxRate', 'gramWeight', 'width',
+  'stdMinute', 'basePrice', 'quotePrice', 'sampleFee'
+])
+function inputPrecision(field) {
+  return field.precision ?? (decimalInputFields.has(field.prop) ? 2 : 0)
+}
+function inputStep(field) {
+  return 10 ** -Math.min(inputPrecision(field), 4)
 }
 function formatDateTime(value) {
   return value ? String(value).replace('T', ' ').slice(0, 19) : '—'

@@ -16,7 +16,7 @@ public abstract class AbstractBaseService<M extends BaseMapper<T>, T extends Bas
         if (StringUtils.hasText(keyword)) {
             query.like(keywordColumn, keyword.trim());
         }
-        query.orderByDesc("id");
+        query.orderByDesc("created_at");
         return page(new Page<>(current, size), query);
     }
 

@@ -15,6 +15,28 @@ const materialCategoryOptions = [
   { label: '面料', value: 1 }, { label: '辅料', value: 2 }, { label: '包装', value: 3 }, { label: '其他', value: 4 }
 ]
 
+const grantTypeOptions = [
+  { label: '手工授予', value: 1 }, { label: '随部门继承', value: 2 }
+]
+const subjectTypeOptions = [
+  { label: '角色', value: 1 }, { label: '部门', value: 2 }, { label: '人员', value: 3 }
+]
+const actionCodeOptions = [
+  { label: '查看', value: 'view' }, { label: '新增', value: 'add' }, { label: '编辑', value: 'edit' },
+  { label: '删除', value: 'delete' }, { label: '审核', value: 'approve' }, { label: '导出', value: 'export' },
+  { label: '打印', value: 'print' }
+]
+const operStateOptions = [
+  { label: '授予', value: 1 }, { label: '收回', value: 0 }, { label: '待审核', value: 2 }
+]
+const grantSourceOptions = [
+  { label: '手工配置', value: 1 }, { label: '部门继承', value: 2 }, { label: '默认开通', value: 3 }
+]
+const attachmentBizTypeOptions = [
+  { label: '单位', value: 'unit' }, { label: '供应商', value: 'supplier' }, { label: '款式', value: 'style' },
+  { label: '物料', value: 'material' }, { label: '合同', value: 'contract' }
+]
+
 const commonColumns = [
   { prop: 'status', label: '状态', width: 90, type: 'status' },
   { prop: 'updatedAt', label: '更新时间', width: 170 }
@@ -249,6 +271,152 @@ export const crudConfigs = [
       { prop: 'safetyQty', label: '安全库存', type: 'number', default: 0 }, { prop: 'stdPrice', label: '标准单价', type: 'number', default: 0 },
       { prop: 'taxRate', label: '税率', type: 'number', default: 0.13 }, { prop: 'supplierId', label: '默认供应商ID', type: 'number' },
       { prop: 'status', label: '状态', type: 'select', options: statusOptions, default: 1 }, { prop: 'remark', label: '备注', type: 'textarea' }
+    ]
+  },
+  {
+    key: 'staff-depts', path: '/ct/staff-depts', title: '人员部门关系', group: '组织权限',
+    api: '/ct/staff-depts', keywordField: 'remark', description: '操作 t_ct_staff_dept，维护人员与部门的多对多关系',
+    columns: [
+      { prop: 'staffId', label: '人员ID', width: 100 }, { prop: 'deptId', label: '部门ID', width: 100 },
+      { prop: 'isPrimary', label: '主部门', width: 90, type: 'yesNo' }, { prop: 'joinDate', label: '加入日期', width: 120 },
+      ...commonColumns
+    ],
+    fields: [
+      { prop: 'staffId', label: '人员ID', type: 'number', required: true },
+      { prop: 'deptId', label: '部门ID', type: 'number', required: true },
+      { prop: 'isPrimary', label: '是否主部门', type: 'select', options: yesNoOptions, default: 0 },
+      { prop: 'joinDate', label: '加入日期', type: 'input' },
+      { prop: 'status', label: '关系状态', type: 'select', options: statusOptions, default: 1 },
+      { prop: 'remark', label: '备注', type: 'textarea' }
+    ]
+  },
+  {
+    key: 'staff-roles', path: '/ct/staff-roles', title: '人员角色关系', group: '组织权限',
+    api: '/ct/staff-roles', keywordField: 'remark', description: '操作 t_ct_staff_role，维护人员多角色和授予方式',
+    columns: [
+      { prop: 'staffId', label: '人员ID', width: 100 }, { prop: 'roleId', label: '角色ID', width: 100 },
+      { prop: 'grantType', label: '授予方式', width: 120, type: 'option', options: grantTypeOptions },
+      ...commonColumns
+    ],
+    fields: [
+      { prop: 'staffId', label: '人员ID', type: 'number', required: true },
+      { prop: 'roleId', label: '角色ID', type: 'number', required: true },
+      { prop: 'grantType', label: '授予方式', type: 'select', options: grantTypeOptions, default: 1 },
+      { prop: 'status', label: '关系状态', type: 'select', options: statusOptions, default: 1 },
+      { prop: 'remark', label: '备注', type: 'textarea' }
+    ]
+  },
+  {
+    key: 'dept-roles', path: '/ct/dept-roles', title: '部门角色关系', group: '组织权限',
+    api: '/ct/dept-roles', keywordField: 'remark', description: '操作 t_ct_dept_role，维护部门默认角色和生效日期',
+    columns: [
+      { prop: 'deptId', label: '部门ID', width: 100 }, { prop: 'roleId', label: '角色ID', width: 100 },
+      { prop: 'effectiveDate', label: '生效日期', width: 120 }, ...commonColumns
+    ],
+    fields: [
+      { prop: 'deptId', label: '部门ID', type: 'number', required: true },
+      { prop: 'roleId', label: '角色ID', type: 'number', required: true },
+      { prop: 'status', label: '关系状态', type: 'select', options: statusOptions, default: 1 },
+      { prop: 'effectiveDate', label: '生效日期', type: 'input' },
+      { prop: 'remark', label: '备注', type: 'textarea' }
+    ]
+  },
+  {
+    key: 'permissions', path: '/ct/permissions', title: '权限管理', group: '组织权限',
+    api: '/ct/permissions', keywordField: 'actionCode', description: '操作 t_ct_permission，按角色、部门或人员授予页面动作权限',
+    columns: [
+      { prop: 'subjectType', label: '主体类型', width: 100, type: 'option', options: subjectTypeOptions },
+      { prop: 'subjectId', label: '主体ID', width: 90 }, { prop: 'pageId', label: '页面ID', width: 90 },
+      { prop: 'actionCode', label: '动作', width: 90, type: 'option', options: actionCodeOptions },
+      { prop: 'operState', label: '操作状态', width: 100, type: 'option', options: operStateOptions },
+      { prop: 'grantSource', label: '授权来源', width: 110, type: 'option', options: grantSourceOptions },
+      { prop: 'effTime', label: '生效时间', width: 160 }, { prop: 'expireTime', label: '失效时间', width: 160 }
+    ],
+    fields: [
+      { prop: 'subjectType', label: '主体类型', type: 'select', options: subjectTypeOptions, default: 1, required: true },
+      { prop: 'subjectId', label: '主体ID', type: 'number', required: true },
+      { prop: 'pageId', label: '页面ID', type: 'number', required: true },
+      { prop: 'actionCode', label: '动作码', type: 'select', options: actionCodeOptions, default: 'view', required: true },
+      { prop: 'operState', label: '操作状态', type: 'select', options: operStateOptions, default: 1 },
+      { prop: 'grantSource', label: '授权来源', type: 'select', options: grantSourceOptions, default: 1 },
+      { prop: 'effTime', label: '生效时间', type: 'input' },
+      { prop: 'expireTime', label: '失效时间', type: 'input' },
+      { prop: 'remark', label: '授权原因', type: 'textarea' }
+    ]
+  },
+  {
+    key: 'style-processes', path: '/sys/style-processes', title: '款式工序', group: '基础资料',
+    api: '/sys/style-processes', keywordField: 'processName', description: '操作 t_sys_style_process，维护款式的工序顺序、工时和计件单价',
+    columns: [
+      { prop: 'styleId', label: '款式ID', width: 90 }, { prop: 'processId', label: '工序ID', width: 90 },
+      { prop: 'processName', label: '工序名称', width: 140 }, { prop: 'seqNo', label: '顺序', width: 80 },
+      { prop: 'stdMinute', label: '标准工时', width: 100 }, { prop: 'piecePrice', label: '计件单价', width: 110, type: 'money' },
+      { prop: 'difficultyRate', label: '难度系数', width: 100 }, { prop: 'isOutsource', label: '可外协', width: 90, type: 'yesNo' },
+      { prop: 'effDate', label: '生效日期', width: 120 }, ...commonColumns
+    ],
+    fields: [
+      { prop: 'styleId', label: '款式ID', type: 'number', required: true },
+      { prop: 'processId', label: '工序ID', type: 'number', required: true },
+      { prop: 'processName', label: '工序名称', type: 'input', required: true },
+      { prop: 'seqNo', label: '工序顺序', type: 'number', default: 1 },
+      { prop: 'stdMinute', label: '标准工时', type: 'number', default: 0, precision: 2 },
+      { prop: 'piecePrice', label: '计件单价', type: 'number', default: 0, precision: 4 },
+      { prop: 'difficultyRate', label: '难度系数', type: 'number', default: 1, precision: 2 },
+      { prop: 'isOutsource', label: '是否可外协', type: 'select', options: yesNoOptions, default: 0 },
+      { prop: 'effDate', label: '生效日期', type: 'input', required: true },
+      { prop: 'status', label: '状态', type: 'select', options: statusOptions, default: 1 },
+      { prop: 'remark', label: '备注', type: 'textarea' }
+    ]
+  },
+  {
+    key: 'style-materials', path: '/sys/style-materials', title: '款式用料', group: '基础资料',
+    api: '/sys/style-materials', keywordField: 'part', description: '操作 t_sys_style_material，维护款式各部位单耗、损耗率和主辅料',
+    columns: [
+      { prop: 'styleId', label: '款式ID', width: 90 }, { prop: 'materialId', label: '物料ID', width: 90 },
+      { prop: 'part', label: '使用部位', width: 110 }, { prop: 'unit', label: '单位', width: 80 },
+      { prop: 'unitConsume', label: '单耗', width: 100 }, { prop: 'lossRate', label: '损耗率', width: 90 },
+      { prop: 'isMain', label: '主料', width: 80, type: 'yesNo' }, { prop: 'seqNo', label: '排序', width: 80 }
+    ],
+    fields: [
+      { prop: 'styleId', label: '款式ID', type: 'number', required: true },
+      { prop: 'materialId', label: '物料ID', type: 'number', required: true },
+      { prop: 'part', label: '使用部位', type: 'input', default: '整件' },
+      { prop: 'unit', label: '单位', type: 'input', default: '米' },
+      { prop: 'unitConsume', label: '单件用量', type: 'number', default: 0, precision: 4 },
+      { prop: 'lossRate', label: '损耗率', type: 'number', default: 0.05, precision: 2 },
+      { prop: 'isMain', label: '是否主料', type: 'select', options: yesNoOptions, default: 0 },
+      { prop: 'seqNo', label: '排序', type: 'number', default: 0 },
+      { prop: 'remark', label: '备注', type: 'textarea' }
+    ]
+  },
+  {
+    key: 'attachments', path: '/sys/attachments', title: '附件管理', group: '基础资料',
+    api: '/sys/attachments', keywordField: 'fileName', description: '操作 t_sys_attach，集中管理业务图片、合同、工艺单和质检报告',
+    columns: [
+      { prop: 'fileName', label: '文件名', width: 180 }, { prop: 'bizType', label: '业务类型', width: 100 },
+      { prop: 'bizId', label: '业务ID', width: 90 }, { prop: 'category', label: '分类', width: 110 },
+      { prop: 'fileSize', label: '大小(字节)', width: 110 }, { prop: 'versionNo', label: '版本', width: 70 },
+      { prop: 'isPublic', label: '客户可见', width: 90, type: 'yesNo' },
+      { prop: 'uploadTime', label: '上传时间', width: 170, type: 'datetime' }, ...commonColumns
+    ],
+    fields: [
+      { prop: 'deptId', label: '归属部门ID', type: 'number' },
+      { prop: 'bizType', label: '业务类型', type: 'select', options: attachmentBizTypeOptions, required: true },
+      { prop: 'bizId', label: '业务主键ID', type: 'number', required: true },
+      { prop: 'category', label: '附件分类', type: 'input' },
+      { prop: 'fileName', label: '原始文件名', type: 'input', required: true },
+      { prop: 'fileExt', label: '扩展名', type: 'input' },
+      { prop: 'fileSize', label: '文件大小(字节)', type: 'number', default: 0 },
+      { prop: 'mimeType', label: 'MIME类型', type: 'input' },
+      { prop: 'fileUrl', label: '存储路径', type: 'input', required: true },
+      { prop: 'fileHash', label: '文件指纹', type: 'input' },
+      { prop: 'versionNo', label: '版本号', type: 'number', default: 1 },
+      { prop: 'isPublic', label: '是否客户可见', type: 'select', options: yesNoOptions, default: 0 },
+      { prop: 'uploaderId', label: '上传人ID', type: 'number' },
+      { prop: 'uploadTime', label: '上传时间', type: 'input' },
+      { prop: 'sortNo', label: '排序', type: 'number', default: 0 },
+      { prop: 'status', label: '状态', type: 'select', options: statusOptions, default: 1 },
+      { prop: 'remark', label: '备注', type: 'textarea' }
     ]
   }
 ]
