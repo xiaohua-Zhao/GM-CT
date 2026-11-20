@@ -1,5 +1,7 @@
 <template>
-  <div class="app-shell">
+  <router-view v-if="isPublicPage" />
+
+  <div v-else class="app-shell">
     <header class="app-topbar">
       <div class="topbar-brand">
         <img :src="logoIcon" alt="成泰" class="topbar-logo" />
@@ -9,9 +11,10 @@
         </div>
       </div>
       <div class="topbar-user">
-        <span class="user-role">系统管理员</span>
+        <span class="user-role">{{ userDisplay }}</span>
         <span class="topbar-divider"></span>
         <span class="system-state"><i></i> 系统在线</span>
+        <button type="button" class="logout-button" @click="handleLogout">退出登录</button>
       </div>
     </header>
 
@@ -47,13 +50,24 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { House, OfficeBuilding, UserFilled } from '@element-plus/icons-vue'
 import logoIcon from './assets/chengtai-logo-icon.png'
+import { logout as logoutApi } from './api/auth'
+import { clearAuth, getStoredUser } from './utils/auth'
 
 const route = useRoute()
 const router = useRouter()
+const currentUser = ref(getStoredUser())
+const isPublicPage = computed(() => route.meta.public === true)
+const userDisplay = computed(() => {
+  const user = currentUser.value
+  if (!user) return '已登录用户'
+  const role = user.roleNames?.[0] || user.post || '员工'
+  return user.staffName ? user.staffName + ' · ' + role : user.loginName
+})
 
 const menuGroups = [
   {
@@ -73,9 +87,20 @@ const menuGroups = [
 const isActive = target => route.path === target || (target !== '/' && route.path.startsWith(target))
 const navigate = path => router.push(path)
 
-const currentTitle = computed(() => {
-  if (route.path === '/basic') return '基础信息管理'
-  if (route.path === '/organization') return '员工与组织'
-  return '首页看板'
+watch(() => route.fullPath, () => {
+  currentUser.value = getStoredUser()
 })
+
+async function handleLogout() {
+  try {
+    await logoutApi()
+  } catch {
+    // JWT 无状态，即使服务端退出接口失败，本地也必须清除登录状态。
+  } finally {
+    clearAuth()
+    currentUser.value = null
+    ElMessage.success('已退出登录')
+    await router.replace('/login')
+  }
+}
 </script>

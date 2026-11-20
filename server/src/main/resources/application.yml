@@ -44,6 +44,20 @@ file:
     max-size: 20971520
 
 
+app:
+  jwt:
+    secret: ${JWT_SECRET:chengtai-fashion-mgmt-jwt-secret-2026-local-dev-only}
+    expiration-seconds: ${JWT_EXPIRATION_SECONDS:28800}
+    issuer: ${JWT_ISSUER:chengtai-fashion-mgmt}
+    header-name: Authorization
+    token-prefix: "Bearer "
+  auth:
+    login-log-enabled: ${AUTH_LOGIN_LOG_ENABLED:true}
+    access-log-enabled: ${AUTH_ACCESS_LOG_ENABLED:false}
+    token-debug-enabled: ${AUTH_TOKEN_DEBUG_ENABLED:true}
+    log-retention-days: ${AUTH_LOG_RETENTION_DAYS:90}
+    log-cleanup-cron: ${AUTH_LOG_CLEANUP_CRON:0 0 3 * * ?}
+
 springdoc:
   api-docs:
     path: /v3/api-docs

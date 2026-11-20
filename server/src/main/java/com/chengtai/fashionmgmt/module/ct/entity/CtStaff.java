@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.chengtai.fashionmgmt.common.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -20,6 +21,8 @@ public class CtStaff extends BaseEntity {
     private String staffCode; // 工号
     private String staffName; // 姓名
     private String loginName; // 登录名
+    @JsonIgnore
+    private String passwordHash; // BCrypt 密码密文，禁止接口返回
     private Integer gender; // 性别
     private String phone; // 电话
     private String post; // 岗位
