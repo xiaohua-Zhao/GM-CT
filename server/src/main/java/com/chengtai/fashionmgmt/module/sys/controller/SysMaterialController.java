@@ -1,6 +1,6 @@
 package com.chengtai.fashionmgmt.module.sys.controller;
 
-import com.chengtai.fashionmgmt.common.BaseCrudController;
+import com.chengtai.fashionmgmt.common.CodeAwareCrudController;
 import com.chengtai.fashionmgmt.common.BaseService;
 import com.chengtai.fashionmgmt.module.sys.entity.SysMaterial;
 import com.chengtai.fashionmgmt.module.sys.service.SysMaterialService;
@@ -14,8 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/sys/materials")
 @RequiredArgsConstructor
-public class SysMaterialController extends BaseCrudController<SysMaterial> {
+public class SysMaterialController extends CodeAwareCrudController<SysMaterial> {
     private final SysMaterialService service;
+
+    @Override
+    protected String codeBizType() { return "MATERIAL"; }
+
+    @Override
+    protected String getBusinessCode(SysMaterial entity) { return entity.getMatCode(); }
+
+    @Override
+    protected void setBusinessCode(SysMaterial entity, String code) { entity.setMatCode(code); }
 
     @Override
     protected BaseService<SysMaterial> service() { return service; }

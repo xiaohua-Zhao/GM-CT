@@ -1,6 +1,6 @@
 package com.chengtai.fashionmgmt.module.sys.controller;
 
-import com.chengtai.fashionmgmt.common.BaseCrudController;
+import com.chengtai.fashionmgmt.common.CodeAwareCrudController;
 import com.chengtai.fashionmgmt.common.BaseService;
 import com.chengtai.fashionmgmt.module.sys.entity.SysStyle;
 import com.chengtai.fashionmgmt.module.sys.service.SysStyleService;
@@ -14,8 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/sys/styles")
 @RequiredArgsConstructor
-public class SysStyleController extends BaseCrudController<SysStyle> {
+public class SysStyleController extends CodeAwareCrudController<SysStyle> {
     private final SysStyleService service;
+
+    @Override
+    protected String codeBizType() { return "STYLE"; }
+
+    @Override
+    protected String getBusinessCode(SysStyle entity) { return entity.getStyleCode(); }
+
+    @Override
+    protected void setBusinessCode(SysStyle entity, String code) { entity.setStyleCode(code); }
 
     @Override
     protected BaseService<SysStyle> service() { return service; }

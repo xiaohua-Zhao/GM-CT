@@ -1,7 +1,9 @@
 package com.chengtai.fashionmgmt.common;
 
 import com.chengtai.fashionmgmt.module.auth.exception.AuthException;
+import com.chengtai.fashionmgmt.common.BusinessValidationException;
 import com.chengtai.fashionmgmt.module.file.exception.AttachmentException;
+import com.chengtai.fashionmgmt.module.sys.code.CodeGenerationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -29,6 +31,20 @@ public class GlobalExceptionHandler {
                 .map(error -> error.getDefaultMessage())
                 .orElse("请求参数不合法");
         return Result.fail(400, message);
+    }
+
+    @ExceptionHandler(BusinessValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Result<Void> handleBusinessValidation(BusinessValidationException ex) {
+        log.warn("业务校验失败: {}", ex.getMessage());
+        return Result.fail(400, ex.getMessage());
+    }
+
+    @ExceptionHandler(CodeGenerationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Result<Void> handleCodeGenerationException(CodeGenerationException ex) {
+        log.warn("编码生成失败: {}", ex.getMessage());
+        return Result.fail(400, ex.getMessage());
     }
 
     @ExceptionHandler(AttachmentException.class)

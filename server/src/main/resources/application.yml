@@ -57,6 +57,14 @@ app:
     token-debug-enabled: ${AUTH_TOKEN_DEBUG_ENABLED:true}
     log-retention-days: ${AUTH_LOG_RETENTION_DAYS:90}
     log-cleanup-cron: ${AUTH_LOG_CLEANUP_CRON:0 0 3 * * ?}
+  api-log:
+    enabled: ${API_LOG_ENABLED:true}
+    include-response: ${API_LOG_INCLUDE_RESPONSE:true}
+    max-payload-length: ${API_LOG_MAX_PAYLOAD_LENGTH:8000}
+    slow-threshold-ms: ${API_LOG_SLOW_THRESHOLD_MS:1000}
+    excluded-paths:
+      - /api/health
+      - /actuator
 
 springdoc:
   api-docs:

@@ -3,6 +3,7 @@
     <property name="LOG_PATH" value="${LOG_PATH:-logs}"/>
     <property name="LOG_NAME" value="chengtai-fashion-mgmt"/>
     <property name="AUTH_LOG_NAME" value="chengtai-auth"/>
+    <property name="API_LOG_NAME" value="chengtai-api"/>
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} | %-5level | [%X{traceId:-}] | %thread | %logger{36} | %msg%n"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -42,6 +43,24 @@
         </encoder>
     </appender>
 
+    <appender name="API_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/api/${API_LOG_NAME}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/api/${API_LOG_NAME}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <logger name="com.chengtai.fashionmgmt.common.web" level="DEBUG">
+        <appender-ref ref="API_FILE"/>
+    </logger>
     <logger name="com.chengtai.fashionmgmt.module.auth" level="DEBUG">
         <appender-ref ref="AUTH_FILE"/>
     </logger>

@@ -15,7 +15,11 @@ export const lookupDefinitions = {
   staffDepts: { api: '/ct/staff-depts', label: row => '人员部门关系 #' + row.id },
   staffRoles: { api: '/ct/staff-roles', label: row => '人员角色关系 #' + row.id },
   deptRoles: { api: '/ct/dept-roles', label: row => '部门角色关系 #' + row.id },
-  permissions: { api: '/ct/permissions', label: row => '权限 #' + row.id }
+  permissions: { api: '/ct/permissions', label: row => '权限 #' + row.id },
+  orders: { api: '/od/orders', label: row => row.orderNo },
+  orderItems: { api: '/od/order-items', label: row => (row.styleCode || '明细') + ' / 行' + row.itemNo },
+  purchaseOrders: { api: '/pu/orders', label: row => row.poNo },
+  purchaseItems: { api: '/pu/order-items', label: row => '采购明细 #' + row.id }
 }
 
 export const idLookupMap = {
@@ -33,7 +37,10 @@ export const idLookupMap = {
   materialId: 'materials',
   processId: 'processes',
   unitId: 'units',
-  supplierId: 'suppliers'
+  supplierId: 'suppliers',
+  buyerId: 'staffs',
+  orderId: 'orders',
+  poId: 'purchaseOrders'
 }
 
 export async function loadLookupData(key) {

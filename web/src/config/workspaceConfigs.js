@@ -1,6 +1,158 @@
 import { crudConfigs } from './crudConfigs'
 
-const configMap = Object.fromEntries(crudConfigs.map(config => [config.key, config]))
+const yesNoOptions = [{ label: '是', value: 1 }, { label: '否', value: 0 }]
+const orderTypeOptions = [{ label: '内销订单', value: 1 }, { label: '加工单', value: 2 }, { label: '返单', value: 3 }]
+const orderStatusOptions = [
+  { label: '初始', value: 1 }, { label: '待生产', value: 2 }, { label: '生产中', value: 3 },
+  { label: '部分交付', value: 4 }, { label: '已完成', value: 5 }, { label: '延期', value: 6 },
+  { label: '暂停', value: 7 }, { label: '取消', value: 8 }
+]
+const purchaseTypeOptions = [
+  { label: '面料', value: 1 }, { label: '辅料', value: 2 }, { label: '包装', value: 3 }, { label: '外协', value: 4 }
+]
+const purchaseStatusOptions = [
+  { label: '待审', value: 1 }, { label: '已审', value: 2 }, { label: '部分到货', value: 3 },
+  { label: '已到货', value: 4 }, { label: '已入库', value: 5 }, { label: '取消', value: 6 }
+]
+
+const businessConfigs = [
+  {
+    key: 'orders', path: '/orders', title: '销售订单', api: '/od/orders', keywordField: 'orderNo',
+    createMode: 'page', createPath: '/orders/new', createLabel: '新增订单', autoCodeField: 'orderNo', codeBizType: 'ORDER',
+    detailPath: '/orders/:id', hideEdit: true,
+    description: '维护客户订单、交期、订单金额和生产放行状态',
+    lookupKeys: ['units', 'staffs', 'depts'],
+    columns: [
+      { prop: 'orderNo', label: '订单号', width: 150 }, { prop: 'unitId', label: '客户单位', width: 150, type: 'lookup', lookup: 'units' },
+      { prop: 'orderType', label: '订单类型', width: 95, type: 'option', options: orderTypeOptions },
+      { prop: 'salesmanId', label: '业务员', width: 120, type: 'lookup', lookup: 'staffs' },
+      { prop: 'orderDate', label: '下单日期', width: 110 }, { prop: 'deliveryDatePlan', label: '预计交期', width: 110 },
+      { prop: 'qtyTotal', label: '总数量', width: 90 }, { prop: 'amountTotal', label: '订单金额', width: 110, type: 'money' },
+      { prop: 'amountTax', label: '价税合计', width: 110, type: 'money' },
+      { prop: 'isProducible', label: '可生产', width: 85, type: 'yesNo' },
+      { prop: 'status', label: '状态', width: 100, type: 'option', options: orderStatusOptions },
+      { prop: 'updatedAt', label: '更新时间', width: 160, type: 'datetime' }
+    ],
+    fields: [
+      { prop: 'orderNo', label: '订单号', type: 'input', required: true },
+      { prop: 'unitId', label: '客户单位', type: 'number', required: true },
+      { prop: 'orderType', label: '订单类型', type: 'select', options: orderTypeOptions, default: 1 },
+      { prop: 'deptId', label: '归属部门', type: 'number' },
+      { prop: 'salesmanId', label: '业务员', type: 'number' },
+      { prop: 'contractNo', label: '合同号', type: 'input' },
+      { prop: 'orderDate', label: '下单日期', type: 'input', required: true },
+      { prop: 'startDate', label: '开始日期', type: 'input' },
+      { prop: 'deliveryDatePlan', label: '预计交付日期', type: 'input', required: true },
+      { prop: 'deliveryDateAct', label: '实际交付日期', type: 'input' },
+      { prop: 'currency', label: '币种', type: 'input', default: 'CNY' },
+      { prop: 'qtyTotal', label: '订单总数量', type: 'number', default: 0, precision: 2 },
+      { prop: 'amountTotal', label: '订单金额', type: 'number', default: 0, precision: 2 },
+      { prop: 'taxRate', label: '税率', type: 'number', default: 0.13, precision: 4 },
+      { prop: 'amountTax', label: '价税合计', type: 'number', default: 0, precision: 2 },
+      { prop: 'costPlan', label: '预计成本', type: 'number', default: 0, precision: 2 },
+      { prop: 'costAct', label: '实际成本', type: 'number', default: 0, precision: 2 },
+      { prop: 'depositAmount', label: '已收定金', type: 'number', default: 0, precision: 2 },
+      { prop: 'payDatePlan', label: '预计首款日期', type: 'input' },
+      { prop: 'isProducible', label: '允许生产', type: 'select', options: yesNoOptions, default: 0 },
+      { prop: 'releaseTime', label: '放行时间', type: 'input' },
+      { prop: 'status', label: '订单状态', type: 'select', options: orderStatusOptions, default: 1 },
+      { prop: 'delayDays', label: '逾期天数', type: 'number', default: 0 },
+      { prop: 'remark', label: '备注', type: 'textarea' }
+    ]
+  },
+  {
+    key: 'order-items', path: '/order-items', title: '订单明细', api: '/od/order-items', keywordField: 'styleCode',
+    description: '维护订单款式、颜色、尺码、数量和单价',
+    lookupKeys: ['orders', 'styles', 'depts'],
+    columns: [
+      { prop: 'orderId', label: '订单', width: 150, type: 'lookup', lookup: 'orders' },
+      { prop: 'itemNo', label: '行号', width: 70 }, { prop: 'styleId', label: '款式', width: 150, type: 'lookup', lookup: 'styles' },
+      { prop: 'styleCode', label: '款号', width: 110 }, { prop: 'color', label: '颜色', width: 90 }, { prop: 'size', label: '尺码', width: 80 },
+      { prop: 'qty', label: '数量', width: 90 }, { prop: 'unitPrice', label: '单价', width: 100, type: 'money' },
+      { prop: 'amount', label: '金额', width: 110, type: 'money' }, { prop: 'qtyShipped', label: '已发', width: 85 },
+      { prop: 'deliveryDatePlan', label: '行交期', width: 110 }
+    ],
+    fields: [
+      { prop: 'orderId', label: '销售订单', type: 'number', required: true },
+      { prop: 'itemNo', label: '行号', type: 'number', default: 1 },
+      { prop: 'styleId', label: '款式', type: 'number', required: true },
+      { prop: 'styleCode', label: '款号快照', type: 'input', required: true },
+      { prop: 'deptId', label: '归属部门', type: 'number' },
+      { prop: 'color', label: '颜色', type: 'input' }, { prop: 'size', label: '尺码', type: 'input' },
+      { prop: 'qty', label: '数量', type: 'number', default: 0, precision: 2 },
+      { prop: 'unitPrice', label: '单价', type: 'number', default: 0, precision: 4 },
+      { prop: 'amount', label: '金额', type: 'number', default: 0, precision: 2 },
+      { prop: 'taxRate', label: '税率', type: 'number', default: 0.13, precision: 4 },
+      { prop: 'deliveryDatePlan', label: '预计交付日期', type: 'input' },
+      { prop: 'qtyShipped', label: '已发数量', type: 'number', default: 0, precision: 2 },
+      { prop: 'techDesc', label: '工艺要求', type: 'textarea' }, { prop: 'remark', label: '备注', type: 'textarea' }
+    ]
+  },
+  {
+    key: 'purchase-orders', path: '/purchase-orders', title: '采购订单', api: '/pu/orders', keywordField: 'poNo', autoCodeField: 'poNo', codeBizType: 'PURCHASE',
+    createMode: 'page', createPath: '/purchases/new', createLabel: '新增采购订单', detailPath: '/purchases/:id', hideEdit: true,
+    description: '维护采购供应商、采购类型、金额和到货进度',
+    lookupKeys: ['suppliers', 'staffs', 'depts', 'orders'],
+    columns: [
+      { prop: 'poNo', label: '采购单号', width: 150 }, { prop: 'supplierId', label: '供应商', width: 160, type: 'lookup', lookup: 'suppliers' },
+      { prop: 'orderId', label: '关联订单', width: 145, type: 'lookup', lookup: 'orders' },
+      { prop: 'poType', label: '采购类型', width: 95, type: 'option', options: purchaseTypeOptions },
+      { prop: 'poDate', label: '采购日期', width: 110 }, { prop: 'expectArriveDate', label: '预计到货', width: 110 },
+      { prop: 'qtyTotal', label: '采购数量', width: 95 }, { prop: 'amount', label: '采购金额', width: 110, type: 'money' },
+      { prop: 'qtyReceived', label: '已到货', width: 90 },
+      { prop: 'status', label: '状态', width: 100, type: 'option', options: purchaseStatusOptions },
+      { prop: 'buyerId', label: '采购员', width: 120, type: 'lookup', lookup: 'staffs' },
+      { prop: 'updatedAt', label: '更新时间', width: 160, type: 'datetime' }
+    ],
+    fields: [
+      { prop: 'poNo', label: '采购单号', type: 'input', required: true },
+      { prop: 'supplierId', label: '供应商', type: 'number', required: true },
+      { prop: 'orderId', label: '关联销售订单', type: 'number' },
+      { prop: 'prodPlanId', label: '关联生产计划', type: 'number' },
+      { prop: 'deptId', label: '归属部门', type: 'number' },
+      { prop: 'poType', label: '采购类型', type: 'select', options: purchaseTypeOptions, default: 1 },
+      { prop: 'poDate', label: '采购日期', type: 'input', required: true },
+      { prop: 'expectArriveDate', label: '预计到货日期', type: 'input' },
+      { prop: 'qtyTotal', label: '采购总数量', type: 'number', default: 0, precision: 2 },
+      { prop: 'amount', label: '采购金额', type: 'number', default: 0, precision: 2 },
+      { prop: 'taxRate', label: '税率', type: 'number', default: 0.13, precision: 4 },
+      { prop: 'amountTax', label: '价税合计', type: 'number', default: 0, precision: 2 },
+      { prop: 'qtyReceived', label: '已到货数量', type: 'number', default: 0, precision: 2 },
+      { prop: 'status', label: '采购状态', type: 'select', options: purchaseStatusOptions, default: 1 },
+      { prop: 'stockInNo', label: '汇总入库单号', type: 'input' },
+      { prop: 'buyerId', label: '采购员', type: 'number' },
+      { prop: 'remark', label: '备注', type: 'textarea' }
+    ]
+  },
+  {
+    key: 'purchase-items', path: '/purchase-items', title: '采购明细', api: '/pu/order-items', keywordField: 'part',
+    description: '维护采购物料、使用部位、数量、价格和到货日期',
+    lookupKeys: ['purchaseOrders', 'materials', 'depts'],
+    columns: [
+      { prop: 'poId', label: '采购单', width: 150, type: 'lookup', lookup: 'purchaseOrders' },
+      { prop: 'materialId', label: '物料', width: 170, type: 'lookup', lookup: 'materials' },
+      { prop: 'part', label: '使用部位', width: 105 }, { prop: 'unit', label: '单位', width: 70 },
+      { prop: 'qty', label: '采购数量', width: 95 }, { prop: 'price', label: '单价', width: 100, type: 'money' },
+      { prop: 'amount', label: '金额', width: 110, type: 'money' }, { prop: 'qtyReceived', label: '已到货', width: 90 },
+      { prop: 'arriveDate', label: '到货日期', width: 110 }
+    ],
+    fields: [
+      { prop: 'poId', label: '采购订单', type: 'number', required: true },
+      { prop: 'materialId', label: '物料', type: 'number', required: true },
+      { prop: 'deptId', label: '归属部门', type: 'number' },
+      { prop: 'part', label: '使用部位', type: 'input', default: '整件' },
+      { prop: 'unit', label: '单位', type: 'input', default: '米' },
+      { prop: 'qty', label: '采购数量', type: 'number', default: 0, precision: 2 },
+      { prop: 'price', label: '采购单价', type: 'number', default: 0, precision: 4 },
+      { prop: 'amount', label: '采购金额', type: 'number', default: 0, precision: 2 },
+      { prop: 'qtyReceived', label: '已到货数量', type: 'number', default: 0, precision: 2 },
+      { prop: 'arriveDate', label: '到货日期', type: 'input' },
+      { prop: 'remark', label: '备注', type: 'textarea' }
+    ]
+  }
+]
+
+const configMap = Object.fromEntries([...crudConfigs, ...businessConfigs].map(config => [config.key, config]))
 const statusColumn = { prop: 'status', label: '状态', width: 90, type: 'status' }
 const updatedColumn = { prop: 'updatedAt', label: '更新时间', width: 160, type: 'datetime' }
 
@@ -191,6 +343,16 @@ const fieldOptionOverrides = {
   }
 }
 
+const autoCodeConfigs = {
+  depts: { autoCodeField: 'deptCode', codeBizType: 'DEPT' },
+  staffs: { autoCodeField: 'staffCode', codeBizType: 'STAFF' },
+  units: { autoCodeField: 'unitCode', codeBizType: 'UNIT' },
+  suppliers: { autoCodeField: 'supCode', codeBizType: 'SUPPLIER' },
+  styles: { autoCodeField: 'styleCode', codeBizType: 'STYLE' },
+  processes: { autoCodeField: 'processCode', codeBizType: 'PROCESS' },
+  materials: { autoCodeField: 'matCode', codeBizType: 'MATERIAL' }
+}
+
 const titleOverrides = {
   staffs: '员工列表',
   commons: '公共信息管理'
@@ -252,6 +414,20 @@ export const workspaceDefinitions = {
       { key: 'permissions', label: '权限管理', icon: 'Tickets' }
     ]
   },
+  orders: {
+    title: '订单管理',
+    description: '统一维护销售订单、交期和订单状态',
+    tabs: [
+      { key: 'orders', label: '订单列表', icon: 'Document' }
+    ]
+  },
+  purchases: {
+    title: '采购管理',
+    description: '统一维护采购订单、采购明细、付款计划和到货进度',
+    tabs: [
+      { key: 'purchase-orders', label: '采购订单', icon: 'Goods' }
+    ]
+  },
   basic: {
     title: '基础数据管理',
     description: '统一维护单位、供应商、银行账户、款式、工序和物料等基础资料',
@@ -265,7 +441,8 @@ export const workspaceDefinitions = {
       { key: 'materials', label: '物料管理', icon: 'Box' },
       { key: 'style-processes', label: '款式工序', icon: 'List' },
       { key: 'style-materials', label: '款式用料', icon: 'Grid' },
-      { key: 'attachments', label: '附件管理', icon: 'Files' }
+      { key: 'attachments', label: '附件管理', icon: 'Files' },
+      { key: 'code-rules', label: '编码规则', icon: 'Tickets' }
     ]
   }
 }
@@ -279,10 +456,13 @@ export function getWorkspaceConfig(workspace, key) {
     description: descriptionOverrides[key] || base.description,
     columns: columnOverrides[key] || base.columns,
     fields: (base.fields || []).map(field => fieldOptionOverrides[field.prop] ? { ...field, ...fieldOptionOverrides[field.prop] } : field),
+    ...(autoCodeConfigs[key] || {}),
     lookupKeys: lookupKeys[key] || []
   }
 }
 
 export function workspacePathForKey(key) {
+  if (workspaceDefinitions.orders.tabs.some(tab => tab.key === key)) return '/orders'
+  if (workspaceDefinitions.purchases.tabs.some(tab => tab.key === key)) return '/purchases'
   return workspaceDefinitions.basic.tabs.some(tab => tab.key === key) ? '/basic' : '/organization'
 }

@@ -1,6 +1,6 @@
 package com.chengtai.fashionmgmt.module.sys.controller;
 
-import com.chengtai.fashionmgmt.common.BaseCrudController;
+import com.chengtai.fashionmgmt.common.CodeAwareCrudController;
 import com.chengtai.fashionmgmt.common.BaseService;
 import com.chengtai.fashionmgmt.module.sys.entity.SysSupplier;
 import com.chengtai.fashionmgmt.module.sys.service.SysSupplierService;
@@ -14,8 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/sys/suppliers")
 @RequiredArgsConstructor
-public class SysSupplierController extends BaseCrudController<SysSupplier> {
+public class SysSupplierController extends CodeAwareCrudController<SysSupplier> {
     private final SysSupplierService service;
+
+    @Override
+    protected String codeBizType() { return "SUPPLIER"; }
+
+    @Override
+    protected String getBusinessCode(SysSupplier entity) { return entity.getSupCode(); }
+
+    @Override
+    protected void setBusinessCode(SysSupplier entity, String code) { entity.setSupCode(code); }
 
     @Override
     protected BaseService<SysSupplier> service() { return service; }

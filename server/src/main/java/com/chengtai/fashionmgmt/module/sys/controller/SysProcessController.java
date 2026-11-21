@@ -1,6 +1,6 @@
 package com.chengtai.fashionmgmt.module.sys.controller;
 
-import com.chengtai.fashionmgmt.common.BaseCrudController;
+import com.chengtai.fashionmgmt.common.CodeAwareCrudController;
 import com.chengtai.fashionmgmt.common.BaseService;
 import com.chengtai.fashionmgmt.module.sys.entity.SysProcess;
 import com.chengtai.fashionmgmt.module.sys.service.SysProcessService;
@@ -14,8 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/sys/processes")
 @RequiredArgsConstructor
-public class SysProcessController extends BaseCrudController<SysProcess> {
+public class SysProcessController extends CodeAwareCrudController<SysProcess> {
     private final SysProcessService service;
+
+    @Override
+    protected String codeBizType() { return "PROCESS"; }
+
+    @Override
+    protected String getBusinessCode(SysProcess entity) { return entity.getProcessCode(); }
+
+    @Override
+    protected void setBusinessCode(SysProcess entity, String code) { entity.setProcessCode(code); }
 
     @Override
     protected BaseService<SysProcess> service() { return service; }

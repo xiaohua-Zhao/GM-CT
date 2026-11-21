@@ -8,7 +8,7 @@
       <div class="panel-heading-actions">
         <el-button type="primary" @click="openCreate">
           <el-icon><Plus /></el-icon>
-          新增{{ entityName }}
+          {{ createButtonLabel }}
         </el-button>
       </div>
     </div>
@@ -63,7 +63,8 @@
 
       <el-table-column label="操作" fixed="right" :width="operationWidth" align="center">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+          <el-button v-if="config.detailPath" link type="primary" @click="openDetail(row)">查看详情</el-button>
+          <el-button v-if="!config.hideEdit" link type="primary" @click="openEdit(row)">编辑</el-button>
           <el-button v-if="config.key === 'roles'" link type="warning" @click="openRolePermission(row)">权限</el-button>
           <el-button v-if="config.key === 'staffs'" link type="warning" @click="openStaffRoles(row)">角色</el-button>
           <el-button link type="danger" @click="remove(row)">删除</el-button>
@@ -140,6 +141,18 @@
           />
 
           <el-input
+            v-else-if="isAutoCodeField(field)"
+            v-model="form[field.prop]"
+            readonly
+            class="auto-code-input"
+            :placeholder="'系统自动生成' + fieldLabel(field)"
+          >
+            <template v-if="!editingId" #append>
+              <el-button :loading="codeGenerating" @click="fillAutoCode(field)">自动生成</el-button>
+            </template>
+          </el-input>
+
+          <el-input
             v-else-if="field.type === 'textarea'"
             v-model="form[field.prop]"
             type="textarea"
@@ -182,9 +195,11 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { createOne, deleteOne, getPage, updateOne } from '../api/crud'
+import { generateCode } from '../api/codeRules'
 import {
   idLookupMap, loadLookupData, lookupLabel, optionLabel as lookupOptionLabel
 } from '../api/lookups'
@@ -194,6 +209,7 @@ import StaffRoleDialog from './StaffRoleDialog.vue'
 const props = defineProps({
   config: { type: Object, required: true }
 })
+const router = useRouter()
 
 const rows = ref([])
 const total = ref(0)
@@ -211,23 +227,27 @@ const activeRole = ref(null)
 const activeStaff = ref(null)
 const form = reactive({})
 const lookups = reactive({})
+const codeGenerating = ref(false)
 
 const entityNames = {
   depts: '部门', staffs: '员工', roles: '角色', pages: '页面',
   'staff-depts': '人员部门关系', 'staff-roles': '人员角色关系', 'dept-roles': '部门角色关系', permissions: '权限',
   units: '单位', suppliers: '供应商', banks: '银行账户', commons: '公共信息',
   styles: '款式', processes: '工序', materials: '物料',
-  'style-processes': '款式工序', 'style-materials': '款式用料', attachments: '附件'
+  'style-processes': '款式工序', 'style-materials': '款式用料', attachments: '附件',
+  orders: '销售订单', 'order-items': '订单明细', 'purchase-orders': '采购订单', 'purchase-items': '采购明细'
 }
 const entityName = computed(() => entityNames[props.config.key] || props.config.title.replace('管理', ''))
-const operationWidth = computed(() => props.config.key === 'roles' || props.config.key === 'staffs' ? 190 : 135)
+const createButtonLabel = computed(() => props.config.createLabel || '新增' + entityName.value)
+const operationWidth = computed(() => props.config.detailPath ? 165 : (props.config.key === 'roles' || props.config.key === 'staffs' ? 190 : 135))
 
 const fieldLabelMap = {
   deptId: '部门', parentId: '上级部门', leaderStaffId: '负责人', staffId: '人员',
   roleId: '角色', pageId: '页面', parentPageId: '上级页面', subjectId: '授权对象',
   styleId: '款式', materialId: '物料', processId: '工序', unitId: '客户单位',
   supplierId: '默认供应商', uploaderId: '上传人', salesmanId: '业务员',
-  ownerId: '所属对象', bizId: '业务单据ID', deptPath: '部门路径', orderNo: '订单号'
+  ownerId: '所属对象', bizId: '业务单据ID', deptPath: '部门路径', orderNo: '订单号',
+  orderId: '销售订单', poId: '采购订单', buyerId: '采购员', prodPlanId: '生产计划', styleCode: '款号快照'
 }
 
 const lookupKeys = computed(() => {
@@ -256,6 +276,7 @@ const lookupKeys = computed(() => {
 })
 
 const fieldLabel = field => fieldLabelMap[field.prop] || field.label.replace(/ID$/, '')
+const isAutoCodeField = field => props.config.autoCodeField === field.prop
 const isWideField = field => field.type === 'textarea' || ['remark', 'techDesc', 'requestParams'].includes(field.prop)
 const isDateField = field => /Date$|Time$/.test(field.prop) && field.type !== 'number'
 const inputPrecision = field => field.precision ?? (['taxRate', 'gramWeight', 'width', 'stdMinute', 'basePrice', 'quotePrice', 'sampleFee', 'stdPrice', 'safetyQty'].includes(field.prop) ? 2 : 0)
@@ -393,10 +414,34 @@ function resetForm(row) {
     form[field.prop] = row?.[field.prop] ?? field.default ?? null
   })
 }
+async function fillAutoCode(field) {
+  if (!props.config.codeBizType || codeGenerating.value) return
+  codeGenerating.value = true
+  try {
+    const response = await generateCode(props.config.codeBizType)
+    const payload = response.data?.data
+    if (!payload?.previewCode) throw new Error(response.data?.message || '生成编码失败')
+    form[field.prop] = payload.previewCode
+    ElMessage.success('已生成编码：' + payload.previewCode)
+  } catch (error) {
+    ElMessage.error(error?.response?.data?.message || error?.message || '生成编码失败')
+  } finally {
+    codeGenerating.value = false
+  }
+}
+
 function openCreate() {
+  if (props.config.createMode === 'page' && props.config.createPath) {
+    router.push(props.config.createPath)
+    return
+  }
   editingId.value = null
   resetForm()
   dialogVisible.value = true
+}
+function openDetail(row) {
+  if (!props.config.detailPath) return
+  router.push(props.config.detailPath.replace(':id', row.id))
 }
 function openEdit(row) {
   editingId.value = row.id
@@ -419,6 +464,18 @@ async function afterRelationSaved() {
   await Promise.all([loadReferences(), load()])
 }
 async function save() {
+  if (props.config.codeBizType && props.config.autoCodeField) {
+    const codeField = props.config.fields.find(field => field.prop === props.config.autoCodeField)
+    if (codeField && !form[codeField.prop]) {
+      try {
+        const response = await generateCode(props.config.codeBizType)
+        form[codeField.prop] = response.data?.data?.previewCode
+      } catch (error) {
+        ElMessage.error(error?.response?.data?.message || '自动生成编码失败')
+        return
+      }
+    }
+  }
   const missing = props.config.fields
     .filter(field => field.required && (form[field.prop] === null || form[field.prop] === undefined || form[field.prop] === ''))
     .map(field => fieldLabel(field))

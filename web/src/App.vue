@@ -53,7 +53,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { House, OfficeBuilding, UserFilled } from '@element-plus/icons-vue'
+import { Document, Goods, House, OfficeBuilding, UserFilled } from '@element-plus/icons-vue'
 import logoIcon from './assets/chengtai-logo-icon.png'
 import { logout as logoutApi } from './api/auth'
 import { clearAuth, getStoredUser } from './utils/auth'
@@ -73,6 +73,13 @@ const menuGroups = [
   {
     label: '总览',
     items: [{ label: '首页看板', path: '/', icon: House }]
+  },
+  {
+    label: '业务',
+    items: [
+      { label: '订单管理', path: '/orders', icon: Document },
+      { label: '采购管理', path: '/purchases', icon: Goods }
+    ]
   },
   {
     label: '基础资料',

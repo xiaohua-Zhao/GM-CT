@@ -1,6 +1,6 @@
 package com.chengtai.fashionmgmt.module.ct.controller;
 
-import com.chengtai.fashionmgmt.common.BaseCrudController;
+import com.chengtai.fashionmgmt.common.CodeAwareCrudController;
 import com.chengtai.fashionmgmt.common.BaseService;
 import com.chengtai.fashionmgmt.module.ct.entity.CtStaff;
 import com.chengtai.fashionmgmt.module.ct.service.CtStaffService;
@@ -14,8 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/ct/staffs")
 @RequiredArgsConstructor
-public class CtStaffController extends BaseCrudController<CtStaff> {
+public class CtStaffController extends CodeAwareCrudController<CtStaff> {
     private final CtStaffService service;
+
+    @Override
+    protected String codeBizType() { return "STAFF"; }
+
+    @Override
+    protected String getBusinessCode(CtStaff entity) { return entity.getStaffCode(); }
+
+    @Override
+    protected void setBusinessCode(CtStaff entity, String code) { entity.setStaffCode(code); }
 
     @Override
     protected BaseService<CtStaff> service() { return service; }

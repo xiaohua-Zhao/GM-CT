@@ -22,7 +22,8 @@
       </button>
     </div>
 
-    <CrudPanel v-if="activeConfig" :key="activeKey" :config="activeConfig" />
+    <CodeRulePanel v-if="activeKey === 'code-rules'" />
+    <CrudPanel v-else-if="activeConfig" :key="activeKey" :config="activeConfig" />
   </section>
 </template>
 
@@ -34,6 +35,7 @@ import {
   List, OfficeBuilding, Postcard, SetUp, Tickets, User, UserFilled
 } from '@element-plus/icons-vue'
 import CrudPanel from '../components/CrudPanel.vue'
+import CodeRulePanel from '../components/CodeRulePanel.vue'
 import { getWorkspaceConfig, workspaceDefinitions } from '../config/workspaceConfigs'
 
 const props = defineProps({

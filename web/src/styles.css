@@ -265,3 +265,6 @@ button, input, textarea, select { font-family: inherit; }
   .login-options { align-items: flex-start; flex-direction: column; gap: 6px; }
   .topbar-title span, .system-state, .topbar-divider { display: none; }
 }
+
+.auto-code-input .el-input__wrapper { background: #f5f7fa; cursor: not-allowed; }
+.auto-code-input .el-input__inner { color: #606b7a; cursor: not-allowed; }
