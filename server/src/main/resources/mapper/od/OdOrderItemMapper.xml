@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chengtai.fashionmgmt.module.od.mapper.OdOrderItemMapper">
+  <insert id="insertBusiness" useGeneratedKeys="true" keyProperty="entity.id">INSERT INTO t_od_order_item(dept_id,order_id,item_no,style_id,style_code,color,size,qty,unit_price,amount,tax_rate,delivery_date_plan,qty_shipped,tech_desc,remark,created_at,updated_at,created_by,is_del) VALUES(#{entity.deptId},#{entity.orderId},#{entity.itemNo},#{entity.styleId},#{entity.styleCode},#{entity.color},#{entity.size},#{entity.qty},#{entity.unitPrice},#{entity.amount},#{entity.taxRate},#{entity.deliveryDatePlan},#{entity.qtyShipped},#{entity.techDesc},#{entity.remark},NOW(),NOW(),#{createdBy},0)</insert>
+  <update id="updateBusiness">UPDATE t_od_order_item SET item_no=#{entity.itemNo},style_id=#{entity.styleId},style_code=#{entity.styleCode},color=#{entity.color},size=#{entity.size},qty=#{entity.qty},unit_price=#{entity.unitPrice},amount=#{entity.amount},tax_rate=#{entity.taxRate},delivery_date_plan=#{entity.deliveryDatePlan},qty_shipped=#{entity.qtyShipped},tech_desc=#{entity.techDesc},remark=#{entity.remark},updated_at=NOW() WHERE order_item_id=#{entity.id} AND is_del=0</update>
+  <select id="countByItemNo" resultType="int">SELECT COUNT(*) FROM t_od_order_item WHERE order_id=#{orderId} AND item_no=#{itemNo} AND is_del=0<if test="excludeId != null"> AND order_item_id != #{excludeId}</if></select>
+</mapper>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chengtai.fashionmgmt.module.od.mapper.OdOrderMapper">
+  <insert id="insertBusiness" useGeneratedKeys="true" keyProperty="entity.id">
+    INSERT INTO t_od_order(dept_id,order_no,order_type,unit_id,contract_no,salesman_id,order_date,start_date,delivery_date_plan,delivery_date_act,currency,qty_total,amount_total,tax_rate,amount_tax,cost_plan,cost_act,deposit_amount,pay_date_plan,is_producible,release_time,status,delay_days,remark,created_at,updated_at,created_by,is_del)
+    VALUES(#{entity.deptId},#{entity.orderNo},#{entity.orderType},#{entity.unitId},#{entity.contractNo},#{entity.salesmanId},#{entity.orderDate},#{entity.startDate},#{entity.deliveryDatePlan},#{entity.deliveryDateAct},#{entity.currency},#{entity.qtyTotal},#{entity.amountTotal},#{entity.taxRate},#{entity.amountTax},#{entity.costPlan},#{entity.costAct},#{entity.depositAmount},#{entity.payDatePlan},#{entity.isProducible},#{entity.releaseTime},#{entity.status},#{entity.delayDays},#{entity.remark},NOW(),NOW(),#{createdBy},0)
+  </insert>
+  <update id="updateBusiness">
+    UPDATE t_od_order SET dept_id=#{entity.deptId},order_type=#{entity.orderType},unit_id=#{entity.unitId},contract_no=#{entity.contractNo},salesman_id=#{entity.salesmanId},order_date=#{entity.orderDate},start_date=#{entity.startDate},delivery_date_plan=#{entity.deliveryDatePlan},delivery_date_act=#{entity.deliveryDateAct},currency=#{entity.currency},qty_total=#{entity.qtyTotal},amount_total=#{entity.amountTotal},tax_rate=#{entity.taxRate},amount_tax=#{entity.amountTax},cost_plan=#{entity.costPlan},cost_act=#{entity.costAct},deposit_amount=#{entity.depositAmount},pay_date_plan=#{entity.payDatePlan},is_producible=#{entity.isProducible},release_time=#{entity.releaseTime},status=#{entity.status},delay_days=#{entity.delayDays},remark=#{entity.remark},updated_at=NOW()
+    WHERE order_id=#{entity.id} AND is_del=0
+  </update>
+  <select id="countByOrderNo" resultType="int">SELECT COUNT(*) FROM t_od_order WHERE order_no=#{orderNo} AND is_del=0<if test="excludeId != null"> AND order_id != #{excludeId}</if></select>
+  <update id="recalculateTotals">UPDATE t_od_order SET qty_total=(SELECT COALESCE(SUM(qty),0) FROM t_od_order_item WHERE order_id=#{orderId} AND is_del=0),amount_total=(SELECT COALESCE(SUM(amount),0) FROM t_od_order_item WHERE order_id=#{orderId} AND is_del=0),amount_tax=ROUND((SELECT COALESCE(SUM(amount),0) FROM t_od_order_item WHERE order_id=#{orderId} AND is_del=0)*(1+tax_rate),2),updated_at=NOW() WHERE order_id=#{orderId} AND is_del=0</update>
+</mapper>
