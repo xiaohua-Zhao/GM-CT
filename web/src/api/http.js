@@ -3,6 +3,7 @@ import { clearAuth, getToken } from '../utils/auth'
 
 const REQUEST_ID_KEY = 'ct_last_request_id'
 
+// 生成前端请求追踪 ID，用于关联后端访问日志。
 function createRequestId() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID().replace(/-/g, '')
   return 'req-' + Date.now() + '-' + Math.random().toString(16).slice(2, 10)

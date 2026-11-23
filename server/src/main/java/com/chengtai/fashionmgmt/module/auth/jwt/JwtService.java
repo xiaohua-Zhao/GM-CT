@@ -51,6 +51,9 @@ public class JwtService {
                 .getPayload();
     }
 
+    /**
+     * 根据配置密钥创建 HMAC 签名密钥。
+     */
     private SecretKey signingKey() {
         byte[] bytes = properties.getSecret().getBytes(StandardCharsets.UTF_8);
         if (bytes.length < 32) {

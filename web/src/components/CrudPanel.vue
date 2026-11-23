@@ -134,8 +134,8 @@
           <el-date-picker
             v-else-if="isDateField(field)"
             v-model="form[field.prop]"
-            :type="field.prop.toLowerCase().includes('time') ? 'datetime' : 'date'"
-            :value-format="field.prop.toLowerCase().includes('time') ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD'"
+            :type="isDateTimeField(field) ? 'datetime' : 'date'"
+            :value-format="isDateTimeField(field) ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD'"
             placeholder="请选择日期"
             style="width: 100%"
           />
@@ -235,7 +235,11 @@ const entityNames = {
   units: '单位', suppliers: '供应商', banks: '银行账户', commons: '公共信息',
   styles: '款式', processes: '工序', materials: '物料',
   'style-processes': '款式工序', 'style-materials': '款式用料', attachments: '附件',
-  orders: '销售订单', 'order-items': '订单明细', 'purchase-orders': '采购订单', 'purchase-items': '采购明细'
+  orders: '订单', 'order-items': '订单明细', 'purchase-orders': '采购订单', 'purchase-items': '采购明细',
+  'misc-orders': '其他订单', 'misc-order-items': '其他订单明细',
+  'prod-plans': '生产计划', 'prod-tasks': '工序任务', 'cutting-tasks': '裁剪任务',
+  'sewing-tasks': '缝制任务', 'trimming-tasks': '剪线任务', 'ironing-tasks': '整烫任务',
+  'packing-tasks': '包装任务'
 }
 const entityName = computed(() => entityNames[props.config.key] || props.config.title.replace('管理', ''))
 const createButtonLabel = computed(() => props.config.createLabel || '新增' + entityName.value)
@@ -247,7 +251,10 @@ const fieldLabelMap = {
   styleId: '款式', materialId: '物料', processId: '工序', unitId: '客户单位',
   supplierId: '默认供应商', uploaderId: '上传人', salesmanId: '业务员',
   ownerId: '所属对象', bizId: '业务单据ID', deptPath: '部门路径', orderNo: '订单号',
-  orderId: '销售订单', poId: '采购订单', buyerId: '采购员', prodPlanId: '生产计划', styleCode: '款号快照'
+  orderId: '订单', poId: '采购订单', buyerId: '采购员', prodPlanId: '生产计划',
+  styleCode: '款号快照', msOrderId: '其他订单', applicantId: '申请人', useDeptId: '使用部门',
+  plannerId: '计划人', releaseBy: '下达人', issuedBy: '下发人', claimedBy: '领取人',
+  qcInspectorId: '质检员'
 }
 
 const lookupKeys = computed(() => {
@@ -275,27 +282,43 @@ const lookupKeys = computed(() => {
   return [...keys]
 })
 
+// 返回表单字段的显示标签，未配置时回退为字段属性名。
 const fieldLabel = field => fieldLabelMap[field.prop] || field.label.replace(/ID$/, '')
+// 判断字段是否属于需要自动生成编码的只读字段。
 const isAutoCodeField = field => props.config.autoCodeField === field.prop
+// 判断表单字段是否应占据整行宽度。
 const isWideField = field => field.type === 'textarea' || ['remark', 'techDesc', 'requestParams'].includes(field.prop)
-const isDateField = field => /Date$|Time$/.test(field.prop) && field.type !== 'number'
+// 判断字段是否为日期类型，以选择日期控件。
+const isDateField = field => field.type === 'date' || field.type === 'datetime'
+  || (/Date$|Time$/.test(field.prop) && field.type !== 'number')
+// 判断日期字段是否需要精确到时分秒。
+const isDateTimeField = field => field.type === 'datetime' || field.prop.toLowerCase().includes('time')
+// 根据字段业务类型返回数字输入框精度。
 const inputPrecision = field => field.precision ?? (['taxRate', 'gramWeight', 'width', 'stdMinute', 'basePrice', 'quotePrice', 'sampleFee', 'stdPrice', 'safetyQty'].includes(field.prop) ? 2 : 0)
+// 根据字段业务类型返回数字输入框步长。
 const inputStep = field => 10 ** -Math.min(inputPrecision(field), 4)
 
+// 把空值转换为页面统一占位符后显示。
 const display = value => value === null || value === undefined || value === '' ? '—' : value
+// 读取指定关联字典当前已缓存的记录。
 const lookupRecords = key => lookups[key] || []
+// 按字段关联字典格式化选项显示文本。
 const optionLabelForLookup = (key, item) => lookupOptionLabel(key, item)
 
+// 把字段枚举值转换为中文选项标签。
 function optionLabel(column, value) {
   const option = column.options?.find(item => item.value === value)
   return option ? option.label : display(value)
 }
+// 按人民币格式显示金额，空值显示占位符。
 function formatMoney(value) {
   return value === null || value === undefined ? '—' : '¥' + Number(value).toFixed(2)
 }
+// 把后端日期时间格式化为页面展示格式。
 function formatDateTime(value) {
   return value ? String(value).replace('T', ' ').slice(0, 19) : '—'
 }
+// 将附件字节数格式化为 B、KB 或 MB。
 function formatFileSize(value) {
   if (value === null || value === undefined) return '—'
   const bytes = Number(value)
@@ -304,6 +327,7 @@ function formatFileSize(value) {
   return (bytes / 1024 / 1024).toFixed(1) + ' MB'
 }
 
+// 推断表格列对应的关联字典键。
 function lookupKeyForColumn(column, row) {
   if (column.lookup) return column.lookup
   if (column.prop === 'subjectId') {
@@ -314,6 +338,7 @@ function lookupKeyForColumn(column, row) {
   }
   return idLookupMap[column.prop] || null
 }
+// 推断表单字段对应的关联字典键。
 function lookupKeyForField(field) {
   if (field.lookup) return field.lookup
   if (field.prop === 'subjectId') {
@@ -325,15 +350,18 @@ function lookupKeyForField(field) {
   if (field.prop === 'bizId') return null
   return idLookupMap[field.prop] || null
 }
+// 筛选字段可选中的关联记录列表。
 function lookupItems(field) {
   const key = lookupKeyForField(field)
   return key ? lookupRecords(key) : []
 }
+// 把表格中的关联 ID 转成可读名称。
 function cellLookupLabel(column, row) {
   const key = lookupKeyForColumn(column, row)
   return key ? lookupLabel(key, lookupRecords(key), row[column.prop]) : display(row[column.prop])
 }
 
+// 计算部门人数、角色权限数等派生列显示值。
 function computedCell(column, row) {
   if (column.compute === 'deptMemberCount') {
     const relationStaff = lookupRecords('staffDepts')
@@ -366,6 +394,7 @@ function computedCell(column, row) {
   return '—'
 }
 
+// 并行加载当前表单和表格需要的关联下拉数据。
 async function loadReferences() {
   if (!lookupKeys.value.length) return
   lookupLoading.value = true
@@ -380,13 +409,15 @@ async function loadReferences() {
   lookupLoading.value = false
 }
 
+// 按当前分页和关键字加载模块列表数据。
 async function load() {
   loading.value = true
   try {
     const response = await getPage(props.config.api, {
       current: current.value,
       size: size.value,
-      keyword: keyword.value
+      keyword: keyword.value,
+      ...(props.config.fixedFilters || {})
     })
     const payload = response.data
     if (payload?.code !== 0) throw new Error(payload?.message || '查询失败')
@@ -399,21 +430,26 @@ async function load() {
   }
 }
 
+// 回到第一页并按当前关键字重新查询列表。
 function search() {
   current.value = 1
   load()
 }
+// 清空搜索条件并刷新模块列表。
 function resetSearch() {
   keyword.value = ''
   current.value = 1
   load()
 }
+// 重置新增/编辑表单，并在编辑时回填当前行数据。
 function resetForm(row) {
   Object.keys(form).forEach(key => delete form[key])
   props.config.fields.forEach(field => {
     form[field.prop] = row?.[field.prop] ?? field.default ?? null
   })
+  Object.assign(form, props.config.fixedValues || {})
 }
+// 调用后端编码服务生成字段编码并回填表单。
 async function fillAutoCode(field) {
   if (!props.config.codeBizType || codeGenerating.value) return
   codeGenerating.value = true
@@ -430,6 +466,7 @@ async function fillAutoCode(field) {
   }
 }
 
+// 按配置进入独立新增页或打开新增对话框。
 function openCreate() {
   if (props.config.createMode === 'page' && props.config.createPath) {
     router.push(props.config.createPath)
@@ -439,30 +476,37 @@ function openCreate() {
   resetForm()
   dialogVisible.value = true
 }
+// 进入当前记录的详情页面。
 function openDetail(row) {
   if (!props.config.detailPath) return
   router.push(props.config.detailPath.replace(':id', row.id))
 }
+// 打开编辑弹窗并回填当前记录。
 function openEdit(row) {
   editingId.value = row.id
   resetForm(row)
   dialogVisible.value = true
 }
+// 打开角色页面权限配置弹窗。
 function openRolePermission(row) {
   activeRole.value = row
   permissionVisible.value = true
 }
+// 打开员工多角色关联配置弹窗。
 function openStaffRoles(row) {
   activeStaff.value = row
   staffRoleVisible.value = true
 }
+// 处理字段联动变化，并自动刷新关联选项。
 function onFieldChange(field, value) {
   if (field.prop === 'subjectType') form.subjectId = null
   if (field.prop === 'ownerType') form.ownerId = null
 }
+// 角色或员工关联保存后刷新当前列表展示。
 async function afterRelationSaved() {
   await Promise.all([loadReferences(), load()])
 }
+// 校验表单后新增或修改记录，并刷新列表。
 async function save() {
   if (props.config.codeBizType && props.config.autoCodeField) {
     const codeField = props.config.fields.find(field => field.prop === props.config.autoCodeField)
@@ -499,6 +543,7 @@ async function save() {
     saving.value = false
   }
 }
+// 二次确认后删除当前记录，并刷新列表。
 async function remove(row) {
   try {
     await ElMessageBox.confirm('确认删除这条数据吗？删除后不可恢复。', '删除确认', { type: 'warning' })

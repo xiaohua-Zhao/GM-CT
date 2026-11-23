@@ -26,12 +26,21 @@ public class PuOrderItemController extends BaseCrudController<PuOrderItem> {
     private final PuOrderItemService service;
     private final BusinessLogJson logJson;
 
+    /**
+     * 返回采购明细模块的业务 Service，供通用 CRUD 基类完成分层调用。
+     */
     @Override
     protected BaseService<PuOrderItem> service() { return service; }
 
+    /**
+     * 返回采购明细列表模糊查询使用的数据库字段名。
+     */
     @Override
     protected String keywordField() { return "part"; }
 
+    /**l
+     * 返回“采购明细”模块名称，用于接口日志、Swagger 描述和错误提示。
+     */
     @Override
     protected String moduleName() { return "采购明细"; }
 

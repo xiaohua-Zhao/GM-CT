@@ -21,11 +21,20 @@ import java.util.List;
 public class FinInvoiceController extends BaseCrudController<FinInvoice> {
     private final FinInvoiceService service;
     private final BusinessLogJson logJson;
+    /**
+     * 返回发票模块的业务 Service，供通用 CRUD 基类完成分层调用。
+     */
     @Override protected BaseService<FinInvoice> service(){return service;}
+    /**
+     * 返回发票列表模糊查询使用的数据库字段名。
+     */
     @Override protected String keywordField(){return "invoice_no";}
+    /**
+     * 返回“发票”模块名称，用于接口日志、Swagger 描述和错误提示。
+     */
     @Override protected String moduleName(){return "发票信息";}
 
-    /** 按销售订单查询关联发票。 */
+    /** 按订单查询关联发票。 */
     @GetMapping("/by-order/{orderId}")
     public Result<List<FinInvoice>> byOrder(@PathVariable Long orderId){
         log.info("[CONTROLLER][发票][BY_ORDER][IN] orderId={}",orderId);

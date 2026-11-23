@@ -117,13 +117,16 @@ const dialogVisible = ref(false)
 const editingId = ref(null)
 const form = reactive({})
 
+// 把空值转换为页面统一占位符后显示。
 function display(value) {
   return value === null || value === undefined || value === '' ? '—' : value
 }
+// 把字段枚举值转换为中文选项标签。
 function optionLabel(column, value) {
   const option = column.options?.find(item => item.value === value)
   return option ? option.label : display(value)
 }
+// 按人民币格式显示金额，空值显示占位符。
 function formatMoney(value) {
   return value === null || value === undefined ? '—' : `¥${Number(value).toFixed(2)}`
 }
@@ -131,16 +134,20 @@ const decimalInputFields = new Set([
   'unitPrice', 'safetyStock', 'stdPrice', 'taxRate', 'gramWeight', 'width',
   'stdMinute', 'basePrice', 'quotePrice', 'sampleFee'
 ])
+// 根据字段业务类型返回数字输入框精度。
 function inputPrecision(field) {
   return field.precision ?? (decimalInputFields.has(field.prop) ? 2 : 0)
 }
+// 根据字段业务类型返回数字输入框步长。
 function inputStep(field) {
   return 10 ** -Math.min(inputPrecision(field), 4)
 }
+// 把后端日期时间格式化为页面展示格式。
 function formatDateTime(value) {
   return value ? String(value).replace('T', ' ').slice(0, 19) : '—'
 }
 
+// 按当前分页和关键字加载模块列表数据。
 async function load() {
   loading.value = true
   try {
@@ -155,31 +162,37 @@ async function load() {
   }
 }
 
+// 回到第一页并按当前关键字重新查询列表。
 function search() {
   current.value = 1
   load()
 }
+// 清空搜索条件并刷新模块列表。
 function resetSearch() {
   keyword.value = ''
   current.value = 1
   load()
 }
+// 重置新增/编辑表单，并在编辑时回填当前行数据。
 function resetForm(row) {
   Object.keys(form).forEach(key => delete form[key])
   props.config.fields.forEach(field => {
     form[field.prop] = row?.[field.prop] ?? field.default ?? null
   })
 }
+// 打开新增对话框并初始化空白表单。
 function openCreate() {
   editingId.value = null
   resetForm()
   dialogVisible.value = true
 }
+// 打开编辑对话框并回填当前行数据。
 function openEdit(row) {
   editingId.value = row.id
   resetForm(row)
   dialogVisible.value = true
 }
+// 校验表单后新增或修改记录，并刷新列表。
 async function save() {
   const missing = props.config.fields.filter(field => field.required && (form[field.prop] === null || form[field.prop] === undefined || form[field.prop] === '')).map(field => field.label)
   if (missing.length) {
@@ -202,6 +215,7 @@ async function save() {
     saving.value = false
   }
 }
+// 二次确认后删除当前记录，并刷新列表。
 async function remove(row) {
   try {
     await ElMessageBox.confirm('确认删除这条数据吗？删除后不可恢复。', '删除确认', { type: 'warning' })

@@ -38,8 +38,10 @@ const selectedRoleIds = ref([])
 const saving = ref(false)
 
 const scopeLabels = { 1: '全部数据', 2: '本部门及下级', 3: '仅本人', 4: '指定部门' }
+// 把角色数据范围代码转换为中文说明。
 const dataScopeText = value => scopeLabels[value] || '未设置'
 
+// 读取当前员工已经关联的角色 ID 列表。
 function currentRelations() {
   if (!props.staff) return []
   return props.staffRoles.filter(item =>
@@ -52,6 +54,7 @@ watch(() => props.modelValue, visible => {
   selectedRoleIds.value = currentRelations().map(item => Number(item.roleId))
 })
 
+// 保存员工多角色关联并通知父组件刷新。
 async function save() {
   if (!props.staff) return
   saving.value = true

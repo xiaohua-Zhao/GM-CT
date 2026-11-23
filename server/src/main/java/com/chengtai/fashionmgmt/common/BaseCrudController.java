@@ -40,13 +40,21 @@ public abstract class BaseCrudController<T extends BaseEntity> {
     public Result<IPage<T>> page(
             @Parameter(description = "当前页码") @RequestParam(defaultValue = "1") long current,
             @Parameter(description = "每页条数") @RequestParam(defaultValue = "10") long size,
-            @Parameter(description = "关键字") @RequestParam(required = false) String keyword) {
-        log.info("[CONTROLLER][{}][PAGE][IN] class={} method={} current={} size={} keyword={}",
-                moduleName(), controllerClassName(), "page", current, size, keyword);
-        IPage<T> result = service().page(current, size, keyword, keywordField());
+            @Parameter(description = "关键字") @RequestParam(required = false) String keyword,
+            @Parameter(description = "可选的业务阶段筛选") @RequestParam(required = false) Integer stage) {
+        log.info("[CONTROLLER][{}][PAGE][IN] class={} method={} current={} size={} keyword={} stage={}",
+                moduleName(), controllerClassName(), "page", current, size, keyword, stage);
+        IPage<T> result = pageData(current, size, keyword, stage);
         log.info("[CONTROLLER][{}][PAGE][OUT] class={} method={} total={} pages={} result={}",
                 moduleName(), controllerClassName(), "page", result.getTotal(), result.getPages(), logJson.toJson(result));
         return Result.success(result);
+    }
+
+    /**
+     * 执行具体模块的分页查询；子类可覆盖该方法处理阶段等业务筛选条件。
+     */
+    protected IPage<T> pageData(long current, long size, String keyword, Integer stage) {
+        return service().page(current, size, keyword, keywordField());
     }
 
     /**

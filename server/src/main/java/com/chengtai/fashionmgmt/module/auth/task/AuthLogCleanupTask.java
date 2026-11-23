@@ -21,6 +21,9 @@ public class AuthLogCleanupTask {
     private final AuthLogProperties properties;
     private final SysLoginLogMapper loginLogMapper;
 
+    /**
+     * 按保留天数清理过期登录日志，避免日志表持续膨胀。
+     */
     @Scheduled(cron = "${app.auth.log-cleanup-cron:0 0 3 * * ?}")
     public void cleanupExpiredLoginLogs() {
         int days = Math.max(properties.getLogRetentionDays(), 1);

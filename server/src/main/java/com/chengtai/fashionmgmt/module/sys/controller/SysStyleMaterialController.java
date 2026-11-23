@@ -20,12 +20,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class SysStyleMaterialController extends BaseCrudController<SysStyleMaterial> {
     private final SysStyleMaterialService service;
 
+    /**
+     * 返回款式用料模块的业务 Service，供通用 CRUD 基类完成分层调用。
+     */
     @Override
     protected BaseService<SysStyleMaterial> service() { return service; }
 
+    /**
+     * 返回款式用料列表模糊查询使用的数据库字段名。
+     */
     @Override
     protected String keywordField() { return "part"; }
 
+    /**
+     * 返回“款式用料”模块名称，用于接口日志、Swagger 描述和错误提示。
+     */
     @Override
     protected String moduleName() { return "款式用料"; }
 }

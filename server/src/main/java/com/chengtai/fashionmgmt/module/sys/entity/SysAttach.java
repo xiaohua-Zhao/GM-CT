@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_sys_attach")
+@TableName("ct_gm.t_sys_attach")
 public class SysAttach extends BaseEntity {
     @TableId(value = "attach_id", type = IdType.AUTO)
     private Long id;

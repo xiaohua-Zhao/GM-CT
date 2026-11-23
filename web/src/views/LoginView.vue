@@ -75,6 +75,7 @@ const rules = {
   password: [{ required: true, message: '请输入登录密码', trigger: 'blur' }]
 }
 
+// 校验登录表单并调用登录接口，成功后进入系统首页。
 async function submit() {
   if (loading.value) return
   const valid = await formRef.value?.validate().catch(() => false)

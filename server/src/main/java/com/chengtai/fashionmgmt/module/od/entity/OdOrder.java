@@ -9,11 +9,11 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 
 /**
- * 销售订单实体，对应表 t_od_order。
+ * 订单实体，对应表 t_od_order。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_od_order")
+@TableName("ct_gm.t_od_order")
 public class OdOrder extends BaseEntity {
     @TableId(value = "order_id", type = IdType.AUTO)
     private Long id;

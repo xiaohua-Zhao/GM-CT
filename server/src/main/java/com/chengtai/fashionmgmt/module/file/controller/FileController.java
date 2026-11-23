@@ -18,6 +18,9 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileController {
     private final AttachmentStorageService storageService;
 
+    /**
+     * HTTP 接口：接收上传文件并保存到附件目录。
+     */
     @PostMapping("/upload")
     public Result<AttachmentUploadResponse> upload(@RequestPart("file") MultipartFile file) {
         log.info("收到附件上传请求: {}", file.getOriginalFilename());

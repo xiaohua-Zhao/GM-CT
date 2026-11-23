@@ -30,12 +30,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthService authService;
 
+    /**
+     * 登录接口：接收账号密码并返回 JWT 和登录用户信息。
+     */
     @Operation(summary = "登录", description = "校验员工账号密码并签发 JWT")
     @PostMapping("/login")
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         return Result.success("登录成功", authService.login(request, httpRequest));
     }
 
+    /**
+     * 获取当前 JWT 对应的登录用户信息，供前端恢复会话。
+     */
     @Operation(summary = "当前用户", description = "根据 JWT 查询当前登录员工资料")
     @GetMapping("/me")
     public Result<LoginUserInfo> me() {
@@ -43,6 +49,9 @@ public class AuthController {
         return Result.success(authService.getUserInfo(current.id()));
     }
 
+    /**
+     * 退出登录并记录当前用户、IP 和客户端信息。
+     */
     @Operation(summary = "退出登录", description = "记录退出操作，客户端同时删除本地 Token")
     @PostMapping("/logout")
     public Result<Void> logout(HttpServletRequest request) {
@@ -52,6 +61,9 @@ public class AuthController {
         return Result.success("退出成功", null);
     }
 
+    /**
+     * 获取客户端真实 IP，优先读取代理转发头。
+     */
     private String clientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (StringUtils.hasText(forwarded)) {

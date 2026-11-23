@@ -18,7 +18,13 @@ public abstract class BaseEntity {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
 
+    /**
+     * 获取实体主键 ID。
+     */
     public abstract Long getId();
 
+    /**
+     * 设置实体主键 ID。
+     */
     public abstract void setId(Long id);
 }

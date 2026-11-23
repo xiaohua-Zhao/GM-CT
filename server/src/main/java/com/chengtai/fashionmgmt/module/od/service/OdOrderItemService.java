@@ -6,5 +6,8 @@ import java.util.List;
 
 /** 订单明细服务接口。 */
 public interface OdOrderItemService extends BaseService<OdOrderItem> {
+    /**
+     * 按订单 ID 查询订单明细列表。
+     */
     List<OdOrderItem> listByOrderId(Long orderId);
 }

@@ -23,6 +23,9 @@ public class AuthTraceFilter extends OncePerRequestFilter {
     public static final String TRACE_HEADER = "X-Request-Id";
     public static final String TRACE_MDC_KEY = "traceId";
 
+    /**
+     * 为每个请求生成或透传追踪 ID，写入 MDC 并返回请求追踪响应头。
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -36,6 +39,9 @@ public class AuthTraceFilter extends OncePerRequestFilter {
         }
     }
 
+    /**
+     * 规范化请求追踪 ID：为空或格式不合法时生成新的 32 位追踪 ID。
+     */
     private String normalize(String value) {
         if (StringUtils.hasText(value) && value.length() <= 40 && value.matches("[A-Za-z0-9._-]+")) {
             return value;

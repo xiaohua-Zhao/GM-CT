@@ -13,14 +13,14 @@ import java.math.BigDecimal;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_pu_order")
+@TableName("ct_gm.t_pu_order")
 public class PuOrder extends BaseEntity {
     @TableId(value = "po_id", type = IdType.AUTO)
     private Long id;
 
     private Long deptId; // 归属部门ID
     private String poNo; // 采购单号
-    private Long orderId; // 关联销售订单ID
+    private Long orderId; // 关联订单ID
     private Long prodPlanId; // 关联生产计划ID
     private Long supplierId; // 供应商ID
     private Integer poType; // 采购类型

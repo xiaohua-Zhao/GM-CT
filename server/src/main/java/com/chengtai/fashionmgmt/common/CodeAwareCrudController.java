@@ -18,12 +18,24 @@ public abstract class CodeAwareCrudController<T extends BaseEntity> extends Base
     @Autowired
     private CodeGeneratorService codeGeneratorService;
 
+    /**
+     * 返回CodeAwareCrud模块使用的自动编码业务类型。
+     */
     protected abstract String codeBizType();
 
+    /**
+     * 读取CodeAwareCrud实体的业务编码，用于新增时判断是否需要自动生成。
+     */
     protected abstract String getBusinessCode(T entity);
 
+    /**
+     * 将后台生成的业务编码写回CodeAwareCrud实体。
+     */
     protected abstract void setBusinessCode(T entity, String code);
 
+    /**
+     * 新增前自动补充业务编码，再执行通用新增保存流程。
+     */
     @Override
     @PostMapping
     public Result<T> create(@RequestBody T entity) {
@@ -33,6 +45,9 @@ public abstract class CodeAwareCrudController<T extends BaseEntity> extends Base
         return super.create(entity);
     }
 
+    /**
+     * 修改前保留原业务编码；原记录无编码时自动生成，再执行通用修改流程。
+     */
     @Override
     @PutMapping("/{id}")
     public Result<T> update(@PathVariable Long id, @RequestBody T entity) {
@@ -45,6 +60,9 @@ public abstract class CodeAwareCrudController<T extends BaseEntity> extends Base
         return super.update(id, entity);
     }
 
+    /**
+     * 调用通用编码服务生成当前模块业务编码，并记录生成日志。
+     */
     private String generateCode() {
         String code = codeGeneratorService.generate(codeBizType()).getPreviewCode();
         log.info("[AUTO_CODE] bizType={} generatedCode={}", codeBizType(), code);

@@ -27,6 +27,9 @@ public class AttachmentStorageService {
     private final AttachmentProperties properties;
     private Path root;
 
+    /**
+     * 初始化附件存储根目录，并确保目录存在。
+     */
     @PostConstruct
     public void init() throws IOException {
         root = properties.getRoot().toAbsolutePath().normalize();
@@ -34,6 +37,9 @@ public class AttachmentStorageService {
         log.info("附件目录初始化完成: {}", root);
     }
 
+    /**
+     * 校验并保存上传附件，生成唯一文件名后返回附件访问信息。
+     */
     public AttachmentUploadResponse store(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new AttachmentException("上传文件不能为空");

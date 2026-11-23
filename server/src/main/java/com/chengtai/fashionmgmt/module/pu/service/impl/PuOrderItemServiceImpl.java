@@ -62,6 +62,9 @@ public class PuOrderItemServiceImpl extends AbstractBaseService<PuOrderItemMappe
         return affected == 1;
     }
 
+    /**
+     * 按采购订单 ID 查询采购明细列表。
+     */
     @Override
     public List<PuOrderItem> listByPoId(Long poId) {
         return list(new LambdaQueryWrapper<PuOrderItem>().eq(PuOrderItem::getPoId, poId));
@@ -86,6 +89,9 @@ public class PuOrderItemServiceImpl extends AbstractBaseService<PuOrderItemMappe
         if (entity.getQty().signum() < 0) throw new BusinessValidationException("采购数量不能小于0");
     }
 
+    /**
+     * 获取当前登录用户 ID；未登录时返回 null，供自定义 SQL 记录创建人。
+     */
     private Long currentUserId() {
         LoginUserContext.LoginUser user = LoginUserContext.get();
         return user == null ? null : user.id();

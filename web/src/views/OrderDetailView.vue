@@ -159,13 +159,20 @@ const planStatusOptions=[{label:'未收付',value:0},{label:'部分',value:1},{l
 const invoiceTypeOptions=[{label:'销项发票',value:1},{label:'进项发票',value:2}]
 const invoiceStatusOptions=[{label:'待开票',value:1},{label:'已开票',value:2},{label:'已红冲',value:3},{label:'作废',value:4}]
 const orderRules={orderNo:[{required:true,message:'请输入订单号',trigger:'blur'}],unitId:[{required:true,message:'请选择客户单位',trigger:'change'}],orderDate:[{required:true,message:'请选择下单日期',trigger:'change'}],deliveryDatePlan:[{required:true,message:'请选择预计交期',trigger:'change'}]}
+// 把关联记录转换为下拉框显示文本。
 const optionLabel=(key,item)=>lookupDefinitions[key].label(item)
+// 页面显示辅助函数：统一处理关联选项和枚举文本。
 const optionText=(options,value)=>options.find(x=>x.value===value)?.label||value
+// 按人民币两位小数格式显示金额。
 const money=value=>value==null?'—':'¥'+Number(value).toFixed(2)
+// 把收付款计划状态映射为 Element Plus 标签颜色。
 const planStatusType=value=>({0:'info',1:'warning',2:'success',3:'danger'}[value]||'info')
+// 格式化客户单位下拉选项显示文本。
 const unitLabel=id=>{const item=unitOptions.value.find(x=>Number(x.id)===Number(id));return item?optionLabel('units',item):order.unitName||''}
+// 格式化款式下拉选项显示文本。
 const styleLabel=id=>{const item=styleOptions.value.find(x=>Number(x.id)===Number(id));return item?optionLabel('styles',item):'—'}
 
+// 并行加载订单、明细、收款计划、发票和关联基础数据。
 async function loadAll(){
   loading.value=true
   try{
@@ -180,6 +187,7 @@ async function loadAll(){
   }catch(error){ElMessage.error(error?.response?.data?.message||error?.message||'加载订单详情失败')}
   finally{loading.value=false}
 }
+// 校验并保存当前订单基础信息。
 async function saveOrder(){
   const valid=await orderFormRef.value?.validate().catch(()=>false); if(!valid)return
   saving.value=true
@@ -187,28 +195,37 @@ async function saveOrder(){
   catch(error){ElMessage.error(error?.response?.data?.message||'保存订单失败')}
   finally{saving.value=false}
 }
+// 打开新增订单明细对话框并初始化空白表单。
 function openItemCreate(){
   itemEditingId.value=null;Object.keys(itemForm).forEach(k=>delete itemForm[k])
   Object.assign(itemForm,{orderId:order.id,deptId:order.deptId,itemNo:items.value.length+1,styleId:null,styleCode:'',color:'',size:'',qty:0,unitPrice:0,amount:0,taxRate:0.13,deliveryDatePlan:order.deliveryDatePlan,qtyShipped:0,techDesc:'',remark:''});itemDialog.value=true
 }
+// 打开明细编辑对话框并回填当前行数据。
 function openItemEdit(row){itemEditingId.value=row.id;Object.keys(itemForm).forEach(k=>delete itemForm[k]);Object.assign(itemForm,row);itemDialog.value=true}
+// 选择款式后自动回填款式编码。
 function syncStyleCode(id){const item=styleOptions.value.find(x=>Number(x.id)===Number(id));if(item)itemForm.styleCode=item.styleCode||''}
+// 新增或修改订单明细并刷新明细列表。
 async function saveItem(){
   saving.value=true
   try{if(itemEditingId.value)await updateOrderItem(itemEditingId.value,itemForm);else await createOrderItem(itemForm);ElMessage.success('订单明细已保存');itemDialog.value=false;const r=await getOrderItems(order.id);items.value=r.data.data||[]}
   catch(error){ElMessage.error(error?.response?.data?.message||'保存订单明细失败')}finally{saving.value=false}
 }
+// 确认后删除已保存明细并重新加载列表。
 async function removeItem(row){try{await ElMessageBox.confirm('确认删除该订单明细吗？','删除确认',{type:'warning'});await deleteOrderItem(row.id);ElMessage.success('已删除');const r=await getOrderItems(order.id);items.value=r.data.data||[]}catch(error){if(error!=='cancel'&&error!=='close')ElMessage.error(error?.response?.data?.message||'删除失败')}}
+// 打开新增收款计划对话框并初始化空白表单。
 function openPlanCreate(){
   planEditingId.value=null;Object.keys(planForm).forEach(k=>delete planForm[k])
   Object.assign(planForm,{planNo:'',deptId:order.deptId,direction:1,sourceType:1,sourceId:order.id,sourceNo:order.orderNo,partnerType:1,partnerId:order.unitId,partnerName:unitLabel(order.unitId),seqNo:plans.value.length+1,nodeType:1,ratio:null,planDate:'',planAmount:0,paidAmount:0,status:0,remark:''});planDialog.value=true
 }
+// 打开编辑收付款计划对话框并回填当前行。
 function openPlanEdit(row){planEditingId.value=row.id;Object.keys(planForm).forEach(k=>delete planForm[k]);Object.assign(planForm,row);planDialog.value=true}
+// 新增或修改收款计划并刷新计划列表。
 async function savePlan(){
   saving.value=true
   try{if(planEditingId.value)await updatePlan(planEditingId.value,planForm);else await createPlan(planForm);ElMessage.success('收款计划已保存');planDialog.value=false;const r=await getPlanList(order.id);plans.value=r.data.data||[]}
   catch(error){ElMessage.error(error?.response?.data?.message||'保存收款计划失败')}finally{saving.value=false}
 }
+// 确认后删除已保存收付款计划并重新加载列表。
 async function removePlan(row){try{await ElMessageBox.confirm('确认删除该收款计划吗？','删除确认',{type:'warning'});await deletePlan(row.id);ElMessage.success('已删除');const r=await getPlanList(order.id);plans.value=r.data.data||[]}catch(error){if(error!=='cancel'&&error!=='close')ElMessage.error(error?.response?.data?.message||'删除失败')}}
 onMounted(loadAll)
 </script>

@@ -17,12 +17,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class SysBankController extends BaseCrudController<SysBank> {
     private final SysBankService service;
 
+    /**
+     * 返回银行账户模块的业务 Service，供通用 CRUD 基类完成分层调用。
+     */
     @Override
     protected BaseService<SysBank> service() { return service; }
 
+    /**
+     * 返回银行账户列表模糊查询使用的数据库字段名。
+     */
     @Override
     protected String keywordField() { return "account_name"; }
 
+    /**
+     * 返回“银行账户”模块名称，用于接口日志、Swagger 描述和错误提示。
+     */
     @Override
     protected String moduleName() { return "银行账户"; }
 }

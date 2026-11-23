@@ -131,26 +131,43 @@ const orderTypeOptions=[{label:'内销订单',value:1},{label:'加工单',value:
 const orderStatusOptions=[{label:'初始',value:1},{label:'待生产',value:2},{label:'生产中',value:3},{label:'部分交付',value:4},{label:'已完成',value:5},{label:'延期',value:6},{label:'暂停',value:7},{label:'取消',value:8}]
 const planNodeOptions=[{label:'定金/预付',value:1},{label:'进度款/到货款',value:2},{label:'尾款',value:3},{label:'补款',value:4},{label:'质保金',value:5},{label:'检查/服务费',value:6}]
 const planStatusOptions=[{label:'未收付',value:0},{label:'部分',value:1},{label:'已结清',value:2},{label:'逾期',value:3}]
+// 返回 YYYY-MM-DD 格式的今天日期，作为表单默认日期。
 const today=()=>new Date().toLocaleDateString('sv-SE')
 const form=reactive({orderNo:'',unitId:null,orderType:1,deptId:null,salesmanId:null,contractNo:'',orderDate:today(),startDate:null,deliveryDatePlan:null,deliveryDateAct:null,currency:'CNY',qtyTotal:0,amountTotal:0,taxRate:0.13,amountTax:0,costPlan:0,costAct:0,depositAmount:0,payDatePlan:null,isProducible:0,releaseTime:null,status:1,delayDays:0,remark:''})
 const rules={orderNo:[{required:true,message:'请输入订单号',trigger:'blur'}],unitId:[{required:true,message:'请选择客户单位',trigger:'change'}],orderDate:[{required:true,message:'请选择下单日期',trigger:'change'}],deliveryDatePlan:[{required:true,message:'请选择预计交付日期',trigger:'change'}]}
+// 把关联记录转换为下拉框显示文本。
 const optionLabel=(key,item)=>lookupDefinitions[key].label(item)
+// 页面显示辅助函数：统一处理关联选项和枚举文本。
 const optionText=(options,value)=>options.find(x=>x.value===value)?.label||value
+// 按人民币两位小数格式显示金额。
 const money=value=>value==null?'—':'¥'+Number(value).toFixed(2)
+// 格式化款式下拉选项显示文本。
 const styleLabel=id=>{const item=styleOptions.value.find(x=>Number(x.id)===Number(id));return item?optionLabel('styles',item):'—'}
+// 格式化客户单位下拉选项显示文本。
 const unitLabel=id=>{const item=unitOptions.value.find(x=>Number(x.id)===Number(id));return item?optionLabel('units',item):''}
 
 onMounted(async()=>{loading.value=true;try{const [units,staffs,depts,styles]=await Promise.all([loadLookupData('units'),loadLookupData('staffs'),loadLookupData('depts'),loadLookupData('styles')]);unitOptions.value=units;staffOptions.value=staffs;deptOptions.value=depts;styleOptions.value=styles}catch(error){ElMessage.error(error?.message||'加载关联数据失败')}finally{loading.value=false}})
+// 调用编码服务生成订单号并回填只读字段。
 async function fillOrderNo(){if(codeGenerating.value)return;codeGenerating.value=true;try{const r=await generateCode('ORDER');form.orderNo=r.data?.data?.previewCode;ElMessage.success('已生成订单号：'+form.orderNo)}catch(error){ElMessage.error(error?.response?.data?.message||'生成订单号失败')}finally{codeGenerating.value=false}}
+// 打开新增订单明细对话框并初始化空白表单。
 function openItemCreate(){itemEditingKey.value=null;Object.keys(itemForm).forEach(k=>delete itemForm[k]);Object.assign(itemForm,{_key:'item-'+draftSeq++,itemNo:draftItems.value.length+1,styleId:null,styleCode:'',color:'',size:'',qty:0,unitPrice:0,amount:0,taxRate:0.13,deliveryDatePlan:form.deliveryDatePlan,qtyShipped:0,techDesc:'',remark:''});itemDialog.value=true}
+// 打开明细编辑对话框并回填当前行数据。
 function openItemEdit(row){itemEditingKey.value=row._key;Object.keys(itemForm).forEach(k=>delete itemForm[k]);Object.assign(itemForm,row);itemDialog.value=true}
+// 选择款式后自动回填款式编码。
 function syncStyleCode(id){const item=styleOptions.value.find(x=>Number(x.id)===Number(id));if(item)itemForm.styleCode=item.styleCode||''}
+// 校验并把当前明细暂存到页面，保存主单时统一提交。
 function saveDraftItem(){if(!itemForm.styleId||!itemForm.styleCode){ElMessage.warning('请选择款式并填写款号');return}const copy=JSON.parse(JSON.stringify(itemForm));const idx=draftItems.value.findIndex(x=>x._key===itemEditingKey.value);if(idx>=0)draftItems.value[idx]=copy;else draftItems.value.push(copy);itemDialog.value=false;ElMessage.success('订单明细已加入')}
+// 从当前页面临时订单明细中移除选中行。
 function removeDraftItem(row){draftItems.value=draftItems.value.filter(x=>x._key!==row._key)}
+// 打开新增收款计划对话框并初始化空白表单。
 function openPlanCreate(){planEditingKey.value=null;Object.keys(planForm).forEach(k=>delete planForm[k]);Object.assign(planForm,{_key:'plan-'+draftSeq++,planNo:'',seqNo:draftPlans.value.length+1,nodeType:1,ratio:null,planDate:'',planAmount:0,status:0,remark:''});planDialog.value=true}
+// 打开编辑收付款计划对话框并回填当前行。
 function openPlanEdit(row){planEditingKey.value=row._key;Object.keys(planForm).forEach(k=>delete planForm[k]);Object.assign(planForm,row);planDialog.value=true}
+// 校验并把当前收付款计划暂存到页面，保存主单时统一提交。
 function saveDraftPlan(){if(!planForm.planNo||!planForm.planDate){ElMessage.warning('请填写计划单号和计划日期');return}const copy=JSON.parse(JSON.stringify(planForm));const idx=draftPlans.value.findIndex(x=>x._key===planEditingKey.value);if(idx>=0)draftPlans.value[idx]=copy;else draftPlans.value.push(copy);planDialog.value=false;ElMessage.success('收款计划已加入')}
+// 从当前页面临时收款计划中移除选中行。
 function removeDraftPlan(row){draftPlans.value=draftPlans.value.filter(x=>x._key!==row._key)}
+// 保存订单、订单明细和收款计划，成功后进入订单详情页。
 async function save(){
   if(!form.orderNo)await fillOrderNo();if(!form.orderNo)return
   const valid=await formRef.value?.validate().catch(()=>false);if(!valid)return

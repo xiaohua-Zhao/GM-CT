@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chengtai.fashionmgmt.module.pl.mapper.PlProdPlanMapper">
+    <insert id="insertBusiness" useGeneratedKeys="true" keyProperty="entity.id">
+        INSERT INTO ct_gm.t_pl_prod_plan(dept_id, prod_plan_no, order_id, prod_qty, start_date, end_date,
+                                          status, planner_id, release_by, release_time, remark,
+                                          created_at, updated_at, created_by, is_del)
+        VALUES (#{entity.deptId}, #{entity.prodPlanNo}, #{entity.orderId}, #{entity.prodQty},
+                #{entity.startDate}, #{entity.endDate}, #{entity.status}, #{entity.plannerId},
+                #{entity.releaseBy}, #{entity.releaseTime}, #{entity.remark}, NOW(), NOW(), #{createdBy}, 0)
+    </insert>
+
+    <update id="updateBusiness">
+        UPDATE ct_gm.t_pl_prod_plan
+        SET dept_id=#{entity.deptId},
+            prod_qty=#{entity.prodQty},
+            start_date=#{entity.startDate},
+            end_date=#{entity.endDate},
+            status=#{entity.status},
+            planner_id=#{entity.plannerId},
+            release_by=#{entity.releaseBy},
+            release_time=#{entity.releaseTime},
+            remark=#{entity.remark},
+            updated_at=NOW()
+        WHERE prod_plan_id=#{entity.id} AND is_del=0
+    </update>
+
+    <select id="countByPlanNo" resultType="int">
+        SELECT COUNT(*) FROM ct_gm.t_pl_prod_plan
+        WHERE prod_plan_no=#{prodPlanNo} AND is_del=0
+        <if test="excludeId != null">AND prod_plan_id != #{excludeId}</if>
+    </select>
+
+    <select id="countByOrderId" resultType="int">
+        SELECT COUNT(*) FROM ct_gm.t_pl_prod_plan
+        WHERE order_id=#{orderId} AND is_del=0
+        <if test="excludeId != null">AND prod_plan_id != #{excludeId}</if>
+    </select>
+
+    <update id="logicalDelete">
+        UPDATE ct_gm.t_pl_prod_plan SET is_del=1, updated_at=NOW()
+        WHERE prod_plan_id=#{prodPlanId} AND is_del=0
+    </update>
+</mapper>

@@ -13,7 +13,7 @@ import java.math.BigDecimal;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_sys_process")
+@TableName("ct_gm.t_sys_process")
 public class SysProcess extends BaseEntity {
     @TableId(value = "process_id", type = IdType.AUTO)
     private Long id;

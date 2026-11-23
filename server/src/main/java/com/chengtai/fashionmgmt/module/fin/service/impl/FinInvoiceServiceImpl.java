@@ -63,11 +63,17 @@ public class FinInvoiceServiceImpl extends AbstractBaseService<FinInvoiceMapper,
         return affected == 1;
     }
 
+    /**
+     * 按订单 ID 查询发票列表。
+     */
     @Override
     public List<FinInvoice> listByOrderId(Long orderId) {
         return list(new LambdaQueryWrapper<FinInvoice>().eq(FinInvoice::getOrderId, orderId));
     }
 
+    /**
+     * 按采购订单 ID 查询发票列表。
+     */
     @Override
     public List<FinInvoice> listByPurchaseOrderId(Long poId) {
         return list(new LambdaQueryWrapper<FinInvoice>().eq(FinInvoice::getPoId, poId));
@@ -93,6 +99,9 @@ public class FinInvoiceServiceImpl extends AbstractBaseService<FinInvoiceMapper,
         if (entity.getAmount().signum() < 0) throw new BusinessValidationException("发票金额不能小于0");
     }
 
+    /**
+     * 获取当前登录用户 ID；未登录时返回 null，供自定义 SQL 记录创建人。
+     */
     private Long currentUserId() {
         LoginUserContext.LoginUser user = LoginUserContext.get();
         return user == null ? null : user.id();

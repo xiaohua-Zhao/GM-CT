@@ -11,6 +11,9 @@ public class BusinessLogJson {
     private static final int MAX_LENGTH = 12000;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 将业务对象序列化为日志 JSON；失败时返回可读降级信息。
+     */
     public String toJson(Object value) {
         if (value == null) return "null";
         try {

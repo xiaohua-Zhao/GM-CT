@@ -8,24 +8,42 @@ import java.math.RoundingMode;
 
 /** 业务保存和修改使用的通用值处理工具。 */
 public final class BusinessValueUtils {
+    /**
+     * 私有构造方法：工具类不允许创建实例。
+     */
     private BusinessValueUtils() {}
 
+    /**
+     * 将空金额转换为 0。
+     */
     public static BigDecimal zero(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
     }
 
+    /**
+     * 将金额规范为两位小数，空值按 0 处理。
+     */
     public static BigDecimal money(BigDecimal value) {
         return zero(value).setScale(2, RoundingMode.HALF_UP);
     }
 
+    /**
+     * 将税率规范为 0 至 1 之间的小数，空值按 0 处理。
+     */
     public static BigDecimal taxRate(BigDecimal value) {
         return value == null ? new BigDecimal("0.13") : value;
     }
 
+    /**
+     * 按金额和税率计算价税合计。
+     */
     public static BigDecimal taxIncluded(BigDecimal amount, BigDecimal taxRate) {
         return money(zero(amount).multiply(BigDecimal.ONE.add(taxRate(taxRate))));
     }
 
+    /**
+     * 安全计算两个金额的乘积，并对结果保留两位小数。
+     */
     public static BigDecimal multiply(BigDecimal left, BigDecimal right) {
         return money(zero(left).multiply(zero(right)));
     }

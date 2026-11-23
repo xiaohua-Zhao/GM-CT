@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chengtai.fashionmgmt.module.pl.mapper.PlTaskMapper">
+    <insert id="insertBusiness" useGeneratedKeys="true" keyProperty="entity.id">
+        INSERT INTO ct_gm.t_pl_task(prod_plan_id, task_no, seq_no, process_stage, dept_id, leader_id,
+                                     status, issued_by, issued_at, claimed_by, claimed_at,
+                                     actual_start_at, actual_finish_at, qty_plan, qty_done,
+                                     start_date_plan, end_date_plan, qc_need, qc_status, qc_type,
+                                     qc_qty_check, qc_qty_pass, qc_qty_reject, qc_inspector_id,
+                                     qc_last_date, remark, created_at, updated_at, created_by, is_del)
+        VALUES (#{entity.prodPlanId}, #{entity.taskNo}, #{entity.seqNo}, #{entity.processStage},
+                #{entity.deptId}, #{entity.leaderId}, #{entity.status}, #{entity.issuedBy},
+                #{entity.issuedAt}, #{entity.claimedBy}, #{entity.claimedAt}, #{entity.actualStartAt},
+                #{entity.actualFinishAt}, #{entity.qtyPlan}, #{entity.qtyDone}, #{entity.startDatePlan},
+                #{entity.endDatePlan}, #{entity.qcNeed}, #{entity.qcStatus}, #{entity.qcType},
+                #{entity.qcQtyCheck}, #{entity.qcQtyPass}, #{entity.qcQtyReject}, #{entity.qcInspectorId},
+                #{entity.qcLastDate}, #{entity.remark}, NOW(), NOW(), #{createdBy}, 0)
+    </insert>
+
+    <update id="updateBusiness">
+        UPDATE ct_gm.t_pl_task
+        SET seq_no=#{entity.seqNo},
+            process_stage=#{entity.processStage},
+            dept_id=#{entity.deptId},
+            leader_id=#{entity.leaderId},
+            status=#{entity.status},
+            issued_by=#{entity.issuedBy},
+            issued_at=#{entity.issuedAt},
+            claimed_by=#{entity.claimedBy},
+            claimed_at=#{entity.claimedAt},
+            actual_start_at=#{entity.actualStartAt},
+            actual_finish_at=#{entity.actualFinishAt},
+            qty_plan=#{entity.qtyPlan},
+            qty_done=#{entity.qtyDone},
+            start_date_plan=#{entity.startDatePlan},
+            end_date_plan=#{entity.endDatePlan},
+            qc_need=#{entity.qcNeed},
+            qc_status=#{entity.qcStatus},
+            qc_type=#{entity.qcType},
+            qc_qty_check=#{entity.qcQtyCheck},
+            qc_qty_pass=#{entity.qcQtyPass},
+            qc_qty_reject=#{entity.qcQtyReject},
+            qc_inspector_id=#{entity.qcInspectorId},
+            qc_last_date=#{entity.qcLastDate},
+            remark=#{entity.remark},
+            updated_at=NOW()
+        WHERE task_id=#{entity.id} AND is_del=0
+    </update>
+
+    <select id="countByTaskNo" resultType="int">
+        SELECT COUNT(*) FROM ct_gm.t_pl_task
+        WHERE task_no=#{taskNo} AND is_del=0
+        <if test="excludeId != null">AND task_id != #{excludeId}</if>
+    </select>
+
+    <select id="countByPlanStageDeptSeq" resultType="int">
+        SELECT COUNT(*) FROM ct_gm.t_pl_task
+        WHERE prod_plan_id=#{prodPlanId} AND process_stage=#{processStage} AND seq_no=#{seqNo}
+          AND ((#{deptId} IS NULL AND dept_id IS NULL) OR dept_id=#{deptId}) AND is_del=0
+        <if test="excludeId != null">AND task_id != #{excludeId}</if>
+    </select>
+
+    <select id="nextSeqNo" resultType="int">
+        SELECT COALESCE(MAX(seq_no), 0) + 1 FROM ct_gm.t_pl_task
+        WHERE prod_plan_id=#{prodPlanId} AND process_stage=#{processStage}
+          AND ((#{deptId} IS NULL AND dept_id IS NULL) OR dept_id=#{deptId}) AND is_del=0
+    </select>
+
+    <select id="countByPlanId" resultType="int">
+        SELECT COUNT(*) FROM ct_gm.t_pl_task WHERE prod_plan_id=#{prodPlanId} AND is_del=0
+    </select>
+
+    <update id="logicalDelete">
+        UPDATE ct_gm.t_pl_task SET is_del=1, updated_at=NOW()
+        WHERE task_id=#{taskId} AND is_del=0
+    </update>
+</mapper>

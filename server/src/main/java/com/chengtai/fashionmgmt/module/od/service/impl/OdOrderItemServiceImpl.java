@@ -68,6 +68,9 @@ public class OdOrderItemServiceImpl extends AbstractBaseService<OdOrderItemMappe
         return affected == 1;
     }
 
+    /**
+     * 按订单 ID 查询订单明细列表。
+     */
     @Override
     public List<OdOrderItem> listByOrderId(Long orderId) {
         return list(new LambdaQueryWrapper<OdOrderItem>().eq(OdOrderItem::getOrderId, orderId).orderByAsc(OdOrderItem::getItemNo));
@@ -87,12 +90,15 @@ public class OdOrderItemServiceImpl extends AbstractBaseService<OdOrderItemMappe
     private void validate(OdOrderItem entity, boolean creating) {
         if (entity.getOrderId() == null) throw new BusinessValidationException("订单ID不能为空");
         OdOrder order = orderMapper.selectById(entity.getOrderId());
-        if (order == null) throw new BusinessValidationException("销售订单不存在");
+        if (order == null) throw new BusinessValidationException("订单不存在");
         if (entity.getStyleId() == null) throw new BusinessValidationException("请选择款式");
         if (!StringUtils.hasText(entity.getStyleCode())) throw new BusinessValidationException("款号不能为空");
         if (entity.getQty().signum() < 0) throw new BusinessValidationException("数量不能小于0");
     }
 
+    /**
+     * 获取当前登录用户 ID；未登录时返回 null，供自定义 SQL 记录创建人。
+     */
     private Long currentUserId() {
         LoginUserContext.LoginUser user = LoginUserContext.get();
         return user == null ? null : user.id();

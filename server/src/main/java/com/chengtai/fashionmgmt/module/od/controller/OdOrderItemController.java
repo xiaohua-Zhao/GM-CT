@@ -26,17 +26,26 @@ public class OdOrderItemController extends BaseCrudController<OdOrderItem> {
     private final OdOrderItemService service;
     private final BusinessLogJson logJson;
 
+    /**
+     * 返回订单明细模块的业务 Service，供通用 CRUD 基类完成分层调用。
+     */
     @Override
     protected BaseService<OdOrderItem> service() { return service; }
 
+    /**
+     * 返回订单明细列表模糊查询使用的数据库字段名。
+     */
     @Override
     protected String keywordField() { return "style_code"; }
 
+    /**
+     * 返回“订单明细”模块名称，用于接口日志、Swagger 描述和错误提示。
+     */
     @Override
     protected String moduleName() { return "订单明细"; }
 
     /** 按订单ID查询全部明细。 */
-    /** 按销售订单查询明细，并记录订单ID和返回结果。 */
+    /** 按订单查询明细，并记录订单ID和返回结果。 */
     @GetMapping("/by-order/{orderId}")
     public Result<java.util.List<OdOrderItem>> byOrder(@PathVariable Long orderId) {
         log.info("[CONTROLLER][订单明细][BY_ORDER][IN] class={} method={} orderId={}", getClass().getSimpleName(), "byOrder", orderId);

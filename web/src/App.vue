@@ -28,7 +28,7 @@
               :key="item.path"
               type="button"
               class="menu-item"
-              :class="{ active: isActive(item.path) }"
+              :class="{ active: isActive(item) }"
               @click="navigate(item.path)"
             >
               <el-icon><component :is="item.icon" /></el-icon>
@@ -53,7 +53,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Document, Goods, House, OfficeBuilding, UserFilled } from '@element-plus/icons-vue'
+import { Document, Goods, House, OfficeBuilding, SetUp, Tickets, UserFilled } from '@element-plus/icons-vue'
 import logoIcon from './assets/chengtai-logo-icon.png'
 import { logout as logoutApi } from './api/auth'
 import { clearAuth, getStoredUser } from './utils/auth'
@@ -78,7 +78,28 @@ const menuGroups = [
     label: '业务',
     items: [
       { label: '订单管理', path: '/orders', icon: Document },
-      { label: '采购管理', path: '/purchases', icon: Goods }
+      { label: '采购管理', path: '/purchases', icon: Goods },
+      { label: '其他订单', path: '/misc', icon: Tickets }
+    ]
+  },
+  {
+    label: '生产管理',
+    items: [
+      { label: '生产计划', path: '/production', icon: Document, exact: true },
+      { label: '裁剪任务', path: '/production/cutting', icon: SetUp },
+      { label: '缝制任务', path: '/production/sewing', icon: SetUp },
+      { label: '剪线任务', path: '/production/trimming', icon: SetUp },
+      { label: '整烫任务', path: '/production/ironing', icon: SetUp },
+      { label: '包装任务', path: '/production/packing', icon: SetUp }
+    ]
+  },
+  {
+    label: '财务与仓储',
+    items: [
+      { label: '财务管理', path: '/finance', icon: Tickets },
+      { label: '计件工资', path: '/wage', icon: Tickets },
+      { label: '仓库管理', path: '/warehouse', icon: Goods },
+      { label: '设备管理', path: '/equipment', icon: SetUp }
     ]
   },
   {
@@ -91,13 +112,18 @@ const menuGroups = [
   }
 ]
 
-const isActive = target => route.path === target || (target !== '/' && route.path.startsWith(target))
+// 判断菜单路径是否与当前路由匹配，用于高亮导航。
+const isActive = item => item.exact
+  ? route.path === item.path
+  : route.path === item.path || (item.path !== '/' && route.path.startsWith(item.path))
+// 执行顶部导航跳转并关闭当前移动端菜单。
 const navigate = path => router.push(path)
 
 watch(() => route.fullPath, () => {
   currentUser.value = getStoredUser()
 })
 
+// 调用退出接口、清理登录缓存并返回登录页。
 async function handleLogout() {
   try {
     await logoutApi()

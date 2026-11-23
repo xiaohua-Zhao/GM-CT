@@ -110,6 +110,7 @@ const rules={
   targetColumn:[{required:true,message:'请输入目标字段',trigger:'blur'}]
 }
 
+// 加载编码规则列表并逐条查询下一编码预览。
 async function load(){
   loading.value=true
   try{
@@ -135,15 +136,21 @@ async function load(){
     loading.value=false
   }
 }
+// 回到第一页并按当前关键字重新查询编码规则。
 function search(){current.value=1;load()}
+// 清空编码规则搜索条件并刷新列表。
 function resetSearch(){keyword.value='';current.value=1;load()}
+// 重置编码规则表单，并在编辑时回填当前规则。
 function resetForm(row){
   Object.keys(form).forEach(k=>delete form[k])
   const defaults={sequenceLength:4,sequenceStart:1,sequenceStep:1,resetCycle:'NONE',allowManual:1,enabled:1,separator:''}
   Object.assign(form,defaults,row||{})
 }
+// 打开新增编码规则对话框并初始化默认值。
 function openCreate(){editingId.value=null;resetForm();dialogVisible.value=true}
+// 打开编辑编码规则对话框并回填当前规则。
 function openEdit(row){editingId.value=row.id;resetForm(row);dialogVisible.value=true}
+// 校验编码规则表单后新增或修改规则并刷新列表。
 async function save(){
   const valid=await formRef.value?.validate().catch(()=>false)
   if(!valid)return
@@ -158,6 +165,7 @@ async function save(){
     ElMessage.error(error?.response?.data?.message||'保存失败')
   }finally{saving.value=false}
 }
+// 二次确认后删除编码规则并刷新列表。
 async function remove(row){
   try{
     await ElMessageBox.confirm('确认删除编码规则“'+row.ruleName+'”吗？','删除确认',{type:'warning'})
@@ -166,6 +174,7 @@ async function remove(row){
     await load()
   }catch(error){if(error!=='cancel'&&error!=='close')ElMessage.error(error?.response?.data?.message||'删除失败')}
 }
+// 查询并展示当前规则的下一个编码、序号和周期标识。
 async function showPreview(row){
   try{
     const response=await previewCode(row.bizType)
@@ -173,6 +182,7 @@ async function showPreview(row){
     ElMessageBox.alert('下一编码：'+data.previewCode+'<br>当前序号：'+data.currentValue+'<br>周期标识：'+data.periodKey,'编码预览',{confirmButtonText:'知道了',dangerouslyUseHTMLString:true})
   }catch(error){ElMessage.error(error?.response?.data?.message||'预览失败')}
 }
+// 提示输入下一序号并重置当前编码规则序列。
 async function openReset(row){
   try{
     const result=await ElMessageBox.prompt('请输入下一次要生成的流水序号','重置 '+row.ruleName,{

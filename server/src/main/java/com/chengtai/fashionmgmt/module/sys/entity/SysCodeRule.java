@@ -11,7 +11,7 @@ import lombok.EqualsAndHashCode;
 /** 通用编码规则。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_sys_code_rule")
+@TableName("ct_gm.t_sys_code_rule")
 public class SysCodeRule extends BaseEntity {
     @TableId(value = "rule_id", type = IdType.AUTO)
     private Long id;

@@ -53,23 +53,38 @@ const purchaseTypeOptions=[{label:'面料',value:1},{label:'辅料',value:2},{la
 const purchaseStatusOptions=[{label:'待审',value:1},{label:'已审',value:2},{label:'部分到货',value:3},{label:'已到货',value:4},{label:'已入库',value:5},{label:'取消',value:6}]
 const planNodeOptions=[{label:'预付款',value:1},{label:'到货款',value:2},{label:'尾款',value:3},{label:'补款',value:4},{label:'质保金',value:5},{label:'其他',value:6}]
 const planStatusOptions=[{label:'未付',value:0},{label:'部分',value:1},{label:'已结清',value:2},{label:'逾期',value:3}]
+// 返回 YYYY-MM-DD 格式的今天日期，作为表单默认日期。
 const today=()=>new Date().toLocaleDateString('sv-SE')
 const form=reactive({poNo:'',supplierId:null,orderId:null,deptId:null,buyerId:null,poType:1,poDate:today(),expectArriveDate:null,qtyTotal:0,amount:0,taxRate:0.13,amountTax:0,qtyReceived:0,status:1,stockInNo:'',remark:''})
 const rules={poNo:[{required:true,message:'请输入采购单号',trigger:'blur'}],supplierId:[{required:true,message:'请选择供应商',trigger:'change'}],poDate:[{required:true,message:'请选择采购日期',trigger:'change'}]}
+// 页面显示辅助函数：统一处理关联选项、枚举文本和人民币金额格式。
 const optionLabel=(k,i)=>lookupDefinitions[k].label(i);const optionText=(opts,v)=>opts.find(x=>x.value===v)?.label||v;const money=v=>v==null?'—':'¥'+Number(v).toFixed(2)
+// 格式化物料下拉选项显示文本。
 const materialLabel=id=>{const x=materialOptions.value.find(i=>Number(i.id)===Number(id));return x?optionLabel('materials',x):'—'}
+// 格式化供应商下拉选项显示文本。
 const supplierLabel=id=>{const x=supplierOptions.value.find(i=>Number(i.id)===Number(id));return x?optionLabel('suppliers',x):''}
 onMounted(async()=>{loading.value=true;try{const [sup,staff,dept,mat,orders]=await Promise.all([loadLookupData('suppliers'),loadLookupData('staffs'),loadLookupData('depts'),loadLookupData('materials'),loadLookupData('orders')]);supplierOptions.value=sup;staffOptions.value=staff;deptOptions.value=dept;materialOptions.value=mat;salesOrders.value=orders}catch(e){ElMessage.error(e?.message||'加载关联数据失败')}finally{loading.value=false}})
+// 调用编码服务生成采购单号并回填只读字段。
 async function fillPoNo(){if(codeGenerating.value)return;codeGenerating.value=true;try{const r=await generateCode('PURCHASE');form.poNo=r.data.data.previewCode;ElMessage.success('已生成采购单号：'+form.poNo)}catch(e){ElMessage.error(e?.response?.data?.message||'生成采购单号失败')}finally{codeGenerating.value=false}}
+// 打开新增订单明细对话框并初始化空白表单。
 function openItemCreate(){itemEditingKey.value=null;Object.keys(itemForm).forEach(k=>delete itemForm[k]);Object.assign(itemForm,{_key:'item-'+seq++,materialId:null,part:'整件',unit:'米',qty:0,price:0,amount:0,qtyReceived:0,arriveDate:'',remark:''});itemDialog.value=true}
+// 打开明细编辑对话框并回填当前行数据。
 function openItemEdit(row){itemEditingKey.value=row._key;Object.keys(itemForm).forEach(k=>delete itemForm[k]);Object.assign(itemForm,row);itemDialog.value=true}
+// 选择物料后自动带出物料计量单位。
 function syncMaterialUnit(id){const x=materialOptions.value.find(i=>Number(i.id)===Number(id));if(x)itemForm.unit=x.unit||itemForm.unit}
+// 校验并把当前明细暂存到页面，保存主单时统一提交。
 function saveDraftItem(){if(!itemForm.materialId){ElMessage.warning('请选择物料');return}const c=JSON.parse(JSON.stringify(itemForm));const i=draftItems.value.findIndex(x=>x._key===itemEditingKey.value);if(i>=0)draftItems.value[i]=c;else draftItems.value.push(c);itemDialog.value=false}
+// 从当前页面临时明细中移除选中行。
 function removeItem(row){draftItems.value=draftItems.value.filter(x=>x._key!==row._key)}
+// 打开新增收款计划对话框并初始化空白表单。
 function openPlanCreate(){planEditingKey.value=null;Object.keys(planForm).forEach(k=>delete planForm[k]);Object.assign(planForm,{_key:'plan-'+seq++,planNo:'',seqNo:draftPlans.value.length+1,nodeType:1,planDate:'',planAmount:0,status:0,remark:''});planDialog.value=true}
+// 打开编辑收付款计划对话框并回填当前行。
 function openPlanEdit(row){planEditingKey.value=row._key;Object.keys(planForm).forEach(k=>delete planForm[k]);Object.assign(planForm,row);planDialog.value=true}
+// 校验并把当前收付款计划暂存到页面，保存主单时统一提交。
 function saveDraftPlan(){if(!planForm.planNo||!planForm.planDate){ElMessage.warning('请填写计划单号和计划日期');return}const c=JSON.parse(JSON.stringify(planForm));const i=draftPlans.value.findIndex(x=>x._key===planEditingKey.value);if(i>=0)draftPlans.value[i]=c;else draftPlans.value.push(c);planDialog.value=false}
+// 从当前页面临时收付款计划中移除选中行。
 function removePlan(row){draftPlans.value=draftPlans.value.filter(x=>x._key!==row._key)}
+// 保存采购订单、采购明细和付款计划，成功后进入采购详情页。
 async function save(){if(!form.poNo)await fillPoNo();if(!form.poNo)return;const valid=await formRef.value?.validate().catch(()=>false);if(!valid)return;saving.value=true;try{const r=await createOne('/pu/orders',form);if(r.data?.code!==0)throw new Error(r.data?.message||'保存失败');const poId=r.data.data.id,poNo=r.data.data.poNo||form.poNo;const results=await Promise.allSettled([...draftItems.value.map(x=>{const {_key,...d}=x;return createPurchaseItem({...d,poId,deptId:form.deptId})}),...draftPlans.value.map(x=>{const {_key,...d}=x;return createPurchasePlan({...d,deptId:form.deptId,direction:2,sourceType:2,sourceId:poId,sourceNo:poNo,partnerType:2,partnerId:form.supplierId,partnerName:supplierLabel(form.supplierId),paidAmount:0})})]);const failed=results.filter(x=>x.status==='rejected').length;if(failed)ElMessage.warning('采购单已保存，但有 '+failed+' 条明细或付款计划提交失败');else ElMessage.success('采购订单、明细和付款计划已保存');await router.push('/purchases/'+poId)}catch(e){ElMessage.error(e?.response?.data?.message||e?.message||'保存采购订单失败')}finally{saving.value=false}}
 </script>
 

@@ -21,11 +21,20 @@ import java.util.List;
 public class FinPlanController extends BaseCrudController<FinPlan> {
     private final FinPlanService service;
     private final BusinessLogJson logJson;
+    /**
+     * 返回收付款计划模块的业务 Service，供通用 CRUD 基类完成分层调用。
+     */
     @Override protected BaseService<FinPlan> service(){return service;}
+    /**
+     * 返回收付款计划列表模糊查询使用的数据库字段名。
+     */
     @Override protected String keywordField(){return "plan_no";}
+    /**
+     * 返回“收付款计划”模块名称，用于接口日志、Swagger 描述和错误提示。
+     */
     @Override protected String moduleName(){return "收款计划";}
 
-    /** 按销售订单查询收付款计划。 */
+    /** 按订单查询收付款计划。 */
     @GetMapping("/by-order/{orderId}")
     public Result<List<FinPlan>> byOrder(@PathVariable Long orderId){
         log.info("[CONTROLLER][付款计划][BY_ORDER][IN] orderId={}", orderId);

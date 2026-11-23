@@ -17,12 +17,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class CtPageController extends BaseCrudController<CtPage> {
     private final CtPageService service;
 
+    /**
+     * 返回页面模块的业务 Service，供通用 CRUD 基类完成分层调用。
+     */
     @Override
     protected BaseService<CtPage> service() { return service; }
 
+    /**
+     * 返回页面列表模糊查询使用的数据库字段名。
+     */
     @Override
     protected String keywordField() { return "page_name"; }
 
+    /**
+     * 返回“页面”模块名称，用于接口日志、Swagger 描述和错误提示。
+     */
     @Override
     protected String moduleName() { return "页面管理"; }
 }

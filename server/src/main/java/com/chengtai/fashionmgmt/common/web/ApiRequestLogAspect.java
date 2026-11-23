@@ -40,6 +40,9 @@ public class ApiRequestLogAspect {
     private final ApiLogProperties properties;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 环绕拦截 API 请求，记录 URL、入参、出参、耗时和异常。
+     */
     @Around("within(@org.springframework.web.bind.annotation.RestController *) || execution(public * com.chengtai.fashionmgmt.common.BaseCrudController.*(..))")
     public Object logApi(ProceedingJoinPoint joinPoint) throws Throwable {
         HttpServletRequest request = currentRequest();
@@ -78,6 +81,9 @@ public class ApiRequestLogAspect {
         }
     }
 
+    /**
+     * 从 Spring 请求上下文中获取当前 HTTP 请求。
+     */
     private HttpServletRequest currentRequest() {
         if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
             return attributes.getRequest();
@@ -85,6 +91,9 @@ public class ApiRequestLogAspect {
         return null;
     }
 
+    /**
+     * 判断当前请求路径是否属于日志排除范围。
+     */
     private boolean isExcluded(HttpServletRequest request) {
         if (request == null || properties.getExcludedPaths() == null) {
             return false;
@@ -94,6 +103,9 @@ public class ApiRequestLogAspect {
                 .anyMatch(path -> request.getRequestURI().startsWith(path));
     }
 
+    /**
+     * 提取并脱敏 Controller 方法参数，生成可检索的请求日志。
+     */
     private String serializeArguments(ProceedingJoinPoint joinPoint) {
         Object[] args = joinPoint.getArgs();
         if (args == null || args.length == 0) {
@@ -112,6 +124,9 @@ public class ApiRequestLogAspect {
         return serialize(namedArgs);
     }
 
+    /**
+     * 将对象安全序列化为受长度限制的 JSON 字符串。
+     */
     private String serialize(Object value) {
         try {
             String json = objectMapper.writeValueAsString(sanitize(value, 0));
@@ -121,6 +136,9 @@ public class ApiRequestLogAspect {
         }
     }
 
+    /**
+     * 递归脱敏密码、Token、密钥等敏感字段。
+     */
     private Object sanitize(Object value, int depth) {
         if (value == null) {
             return null;
@@ -186,6 +204,9 @@ public class ApiRequestLogAspect {
         }
     }
 
+    /**
+     * 把上传文件转换为文件名、大小和类型摘要，避免日志输出文件内容。
+     */
     private Map<String, Object> fileSummary(MultipartFile file) {
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("name", file.getOriginalFilename());
@@ -194,6 +215,9 @@ public class ApiRequestLogAspect {
         return summary;
     }
 
+    /**
+     * 判断字段名是否属于需要脱敏的敏感字段。
+     */
     private boolean isSensitive(String key) {
         String normalized = key.replace("_", "").toLowerCase(Locale.ROOT);
         return properties.getSensitiveKeys().stream()
@@ -201,6 +225,9 @@ public class ApiRequestLogAspect {
                 .anyMatch(normalized::contains);
     }
 
+    /**
+     * 将字符串截断到指定长度，避免写入日志表时超长。
+     */
     private String truncate(String value) {
         if (value == null || value.length() <= properties.getMaxPayloadLength()) {
             return value;

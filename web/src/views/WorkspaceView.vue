@@ -57,6 +57,7 @@ const iconMap = {
   List, OfficeBuilding, Postcard, SetUp, Tickets, User, UserFilled
 }
 
+// 切换工作区内当前显示的业务模块页签。
 function setTab(key) {
   router.replace({ path: route.path, query: { tab: key } })
 }

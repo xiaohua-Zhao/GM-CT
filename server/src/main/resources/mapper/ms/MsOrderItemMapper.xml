@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chengtai.fashionmgmt.module.ms.mapper.MsOrderItemMapper">
+    <insert id="insertBusiness" useGeneratedKeys="true" keyProperty="entity.id">
+        INSERT INTO ct_gm.t_ms_order_item(dept_id, ms_order_id, seq_no, item_name, spec, unit, qty,
+                                            price, amount, asset_flag, use_dept_id, remark,
+                                            created_at, updated_at, created_by, is_del)
+        VALUES (#{entity.deptId}, #{entity.msOrderId}, #{entity.seqNo}, #{entity.itemName}, #{entity.spec},
+                #{entity.unit}, #{entity.qty}, #{entity.price}, #{entity.amount}, #{entity.assetFlag},
+                #{entity.useDeptId}, #{entity.remark}, NOW(), NOW(), #{createdBy}, 0)
+    </insert>
+
+    <update id="updateBusiness">
+        UPDATE ct_gm.t_ms_order_item
+        SET dept_id=#{entity.deptId},
+            seq_no=#{entity.seqNo},
+            item_name=#{entity.itemName},
+            spec=#{entity.spec},
+            unit=#{entity.unit},
+            qty=#{entity.qty},
+            price=#{entity.price},
+            amount=#{entity.amount},
+            asset_flag=#{entity.assetFlag},
+            use_dept_id=#{entity.useDeptId},
+            remark=#{entity.remark},
+            updated_at=NOW()
+        WHERE ms_order_item_id=#{entity.id} AND is_del=0
+    </update>
+
+    <select id="countBySeqNo" resultType="int">
+        SELECT COUNT(*) FROM ct_gm.t_ms_order_item
+        WHERE ms_order_id=#{msOrderId} AND seq_no=#{seqNo} AND is_del=0
+        <if test="excludeId != null">AND ms_order_item_id != #{excludeId}</if>
+    </select>
+
+    <select id="nextSeqNo" resultType="int">
+        SELECT COALESCE(MAX(seq_no), 0) + 1
+        FROM ct_gm.t_ms_order_item
+        WHERE ms_order_id=#{msOrderId} AND is_del=0
+    </select>
+
+    <update id="logicalDelete">
+        UPDATE ct_gm.t_ms_order_item SET is_del=1, updated_at=NOW()
+        WHERE ms_order_item_id=#{itemId} AND is_del=0
+    </update>
+
+    <update id="logicalDeleteByMsOrderId">
+        UPDATE ct_gm.t_ms_order_item SET is_del=1, updated_at=NOW()
+        WHERE ms_order_id=#{msOrderId} AND is_del=0
+    </update>
+</mapper>

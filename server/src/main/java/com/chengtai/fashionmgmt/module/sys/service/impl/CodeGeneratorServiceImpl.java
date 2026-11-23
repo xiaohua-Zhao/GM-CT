@@ -31,6 +31,9 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
     private final SysCodeSequenceMapper sequenceMapper;
     private final CodeTargetRegistry targetRegistry;
 
+    /**
+     * 预览指定业务类型的下一个可用编码，不修改序列值。
+     */
     @Override
     public CodeGenerateResponse preview(String bizType) {
         SysCodeRule rule = requireRule(bizType);
@@ -44,6 +47,9 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
         return response(rule, periodKey, current, next, composeCode(rule, next));
     }
 
+    /**
+     * 在数据库行锁保护下生成并占用一个可用编码。
+     */
     @Override
     @Transactional
     public CodeGenerateResponse generate(String bizType) {
@@ -63,6 +69,9 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
         return response(rule, periodKey, current, next, code);
     }
 
+    /**
+     * 按指定下一序号重置编码序列，并记录操作原因。
+     */
     @Override
     @Transactional
     public CodeGenerateResponse reset(Long ruleId, CodeResetRequest request) {
@@ -83,6 +92,9 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
         return response(rule, periodKey, current, request.getNextValue(), composeCode(rule, request.getNextValue()));
     }
 
+    /**
+     * 按业务类型读取已启用的编码规则，不存在或停用时抛出业务异常。
+     */
     private SysCodeRule requireRule(String bizType) {
         SysCodeRule rule = ruleMapper.selectOne(new LambdaQueryWrapper<SysCodeRule>()
                 .eq(SysCodeRule::getBizType, bizType)
@@ -97,10 +109,16 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
         return rule;
     }
 
+    /**
+     * 根据规则起始值和步长计算序列初始化值。
+     */
     private long initialCurrent(SysCodeRule rule) {
         return Math.max(0L, safeStart(rule) - safeStep(rule));
     }
 
+    /**
+     * 从当前值开始向后查找目标表中尚未使用的编码值。
+     */
     private long nextAvailableValue(SysCodeRule rule, long current) {
         long candidate = current + safeStep(rule);
         for (int i = 0; i < 1000; i++) {
@@ -112,6 +130,9 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
         throw new CodeGenerationException("连续检测1000个编码均已存在，请检查编码规则");
     }
 
+    /**
+     * 按前缀、日期格式、分隔符和序号长度拼接最终业务编码。
+     */
     private String composeCode(SysCodeRule rule, long value) {
         List<String> parts = new ArrayList<>();
         if (StringUtils.hasText(rule.getPrefix())) {
@@ -134,6 +155,9 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
         return String.join(separator, parts);
     }
 
+    /**
+     * 根据重置周期生成当前编码序列的周期键。
+     */
     private String periodKey(SysCodeRule rule) {
         String cycle = rule.getResetCycle() == null ? "NONE" : rule.getResetCycle().toUpperCase();
         LocalDate now = LocalDate.now();
@@ -145,6 +169,9 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
         };
     }
 
+    /**
+     * 构造编码生成结果，包含当前值、下一值、周期键和预览编码。
+     */
     private CodeGenerateResponse response(SysCodeRule rule, String periodKey, long current, long next, String code) {
         return CodeGenerateResponse.builder()
                 .ruleId(rule.getId())
@@ -157,10 +184,16 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
                 .build();
     }
 
+    /**
+     * 读取有效步长，非法或空值时回退为 1。
+     */
     private int safeStep(SysCodeRule rule) {
         return rule.getSequenceStep() == null || rule.getSequenceStep() <= 0 ? 1 : rule.getSequenceStep();
     }
 
+    /**
+     * 读取有效起始序号，非法或空值时回退为 1。
+     */
     private long safeStart(SysCodeRule rule) {
         return rule.getSequenceStart() == null || rule.getSequenceStart() < 1 ? 1L : rule.getSequenceStart();
     }

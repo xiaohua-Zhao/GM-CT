@@ -44,6 +44,7 @@ const emit = defineEmits(['update:modelValue', 'saved'])
 const selectedPageIds = ref([])
 const saving = ref(false)
 
+// 读取当前角色已经勾选的页面权限。
 function currentPermissions() {
   if (!props.role) return []
   return props.permissions.filter(item =>
@@ -59,13 +60,16 @@ watch(() => props.modelValue, visible => {
   selectedPageIds.value = [...new Set(currentPermissions().map(item => Number(item.pageId)))]
 })
 
+// 勾选全部可配置页面权限。
 function selectAll() {
   selectedPageIds.value = props.pages.map(page => page.id)
 }
+// 清空当前角色已勾选的页面权限。
 function clearAll() {
   selectedPageIds.value = []
 }
 
+// 保存当前角色的页面权限配置并通知父组件刷新。
 async function save() {
   if (!props.role) return
   saving.value = true

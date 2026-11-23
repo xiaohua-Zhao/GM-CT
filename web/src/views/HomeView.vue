@@ -103,9 +103,12 @@ const stats = reactive([
   { key: 'materials', label: '物料档案', count: 0, api: '/sys/materials', path: '/basic', tab: 'materials', icon: markRaw(Box), note: '面辅料及包装材料' }
 ])
 
+// 从统计集合中安全读取指定指标数量。
 const countOf = key => stats.find(item => item.key === key)?.count || 0
+// 跳转到指定的工作区或功能页面。
 const go = item => router.push({ path: item.path, query: { tab: item.tab } })
 
+// 加载首页看板所需的订单、财务和业务统计数据。
 async function loadStats() {
   loading.value = true
   const results = await Promise.allSettled(

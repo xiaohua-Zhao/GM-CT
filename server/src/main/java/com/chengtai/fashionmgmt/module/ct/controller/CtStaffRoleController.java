@@ -20,12 +20,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class CtStaffRoleController extends BaseCrudController<CtStaffRole> {
     private final CtStaffRoleService service;
 
+    /**
+     * 返回员工角色关联模块的业务 Service，供通用 CRUD 基类完成分层调用。
+     */
     @Override
     protected BaseService<CtStaffRole> service() { return service; }
 
+    /**
+     * 返回员工角色关联列表模糊查询使用的数据库字段名。
+     */
     @Override
     protected String keywordField() { return "remark"; }
 
+    /**
+     * 返回“员工角色关联”模块名称，用于接口日志、Swagger 描述和错误提示。
+     */
     @Override
     protected String moduleName() { return "人员角色关系"; }
 }

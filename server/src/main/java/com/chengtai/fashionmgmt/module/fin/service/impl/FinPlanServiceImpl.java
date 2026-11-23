@@ -67,12 +67,21 @@ public class FinPlanServiceImpl extends AbstractBaseService<FinPlanMapper, FinPl
         return affected == 1;
     }
 
+    /**
+     * 按订单 ID 查询收付款计划列表。
+     */
     @Override
     public List<FinPlan> listByOrderId(Long orderId) { return listBySource(1, orderId); }
 
+    /**
+     * 按采购订单 ID 查询收付款计划列表。
+     */
     @Override
     public List<FinPlan> listByPurchaseOrderId(Long poId) { return listBySource(2, poId); }
 
+    /**
+     * 按来源类型和来源单据 ID 查询收付款计划列表。
+     */
     @Override
     public List<FinPlan> listBySource(Integer sourceType, Long sourceId) {
         return list(new LambdaQueryWrapper<FinPlan>().eq(FinPlan::getSourceType, sourceType).eq(FinPlan::getSourceId, sourceId).orderByAsc(FinPlan::getSeqNo));
@@ -98,11 +107,17 @@ public class FinPlanServiceImpl extends AbstractBaseService<FinPlanMapper, FinPl
         if (entity.getPlanAmount().signum() < 0) throw new BusinessValidationException("计划金额不能小于0");
     }
 
+    /**
+     * 校验计划单号及同一来源单据的节点序号是否重复。
+     */
     private void checkUnique(FinPlan entity, Long excludeId) {
         if (mapper.countByPlanNo(entity.getPlanNo(), excludeId) > 0) throw new BusinessValidationException("计划单号已存在");
         if (mapper.countBySourceSeq(entity.getSourceType(), entity.getSourceId(), entity.getSeqNo(), excludeId) > 0) throw new BusinessValidationException("同一单据节点序号已存在");
     }
 
+    /**
+     * 获取当前登录用户 ID；未登录时返回 null，供自定义 SQL 记录创建人。
+     */
     private Long currentUserId() {
         LoginUserContext.LoginUser user = LoginUserContext.get();
         return user == null ? null : user.id();

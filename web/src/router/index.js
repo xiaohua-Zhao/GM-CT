@@ -6,6 +6,7 @@ import OrderCreateView from '../views/OrderCreateView.vue'
 import OrderDetailView from '../views/OrderDetailView.vue'
 import PurchaseCreateView from '../views/PurchaseCreateView.vue'
 import PurchaseDetailView from '../views/PurchaseDetailView.vue'
+import ModuleView from '../views/ModuleView.vue'
 import { crudConfigs } from '../config/crudConfigs'
 import { workspacePathForKey } from '../config/workspaceConfigs'
 import { isAuthenticated } from '../utils/auth'
@@ -24,6 +25,18 @@ const routes = [
   { path: '/purchases', name: 'purchases', component: WorkspaceView, props: { workspace: 'purchases' }, meta: { title: '采购管理' } },
   { path: '/purchases/new', name: 'purchase-create', component: PurchaseCreateView, meta: { title: '新增采购订单' } },
   { path: '/purchases/:id', name: 'purchase-detail', component: PurchaseDetailView, meta: { title: '采购订单详情' } },
+  { path: '/production', name: 'production', component: WorkspaceView, props: { workspace: 'production' }, meta: { title: '生产管理' } },
+  { path: '/production/cutting', name: 'production-cutting', component: ModuleView, props: { workspace: 'production', configKey: 'cutting-tasks' }, meta: { title: '裁剪任务' } },
+  { path: '/production/sewing', name: 'production-sewing', component: ModuleView, props: { workspace: 'production', configKey: 'sewing-tasks' }, meta: { title: '缝制任务' } },
+  { path: '/production/trimming', name: 'production-trimming', component: ModuleView, props: { workspace: 'production', configKey: 'trimming-tasks' }, meta: { title: '剪线任务' } },
+  { path: '/production/ironing', name: 'production-ironing', component: ModuleView, props: { workspace: 'production', configKey: 'ironing-tasks' }, meta: { title: '整烫任务' } },
+  { path: '/production/packing', name: 'production-packing', component: ModuleView, props: { workspace: 'production', configKey: 'packing-tasks' }, meta: { title: '包装任务' } },
+  { path: '/production/tasks', name: 'production-tasks', component: ModuleView, props: { workspace: 'production', configKey: 'prod-tasks' }, meta: { title: '全部工序任务' } },
+  { path: '/misc', name: 'misc', component: WorkspaceView, props: { workspace: 'misc' }, meta: { title: '其他订单管理' } },
+  { path: '/finance', name: 'finance', component: WorkspaceView, props: { workspace: 'finance' }, meta: { title: '财务管理' } },
+  { path: '/wage', name: 'wage', component: WorkspaceView, props: { workspace: 'wage' }, meta: { title: '计件工资' } },
+  { path: '/warehouse', name: 'warehouse', component: WorkspaceView, props: { workspace: 'warehouse' }, meta: { title: '仓库管理' } },
+  { path: '/equipment', name: 'equipment', component: WorkspaceView, props: { workspace: 'equipment' }, meta: { title: '设备管理' } },
   { path: '/basic', name: 'basic', component: WorkspaceView, props: { workspace: 'basic' }, meta: { title: '基础信息管理' } },
   { path: '/organization', name: 'organization', component: WorkspaceView, props: { workspace: 'organization' }, meta: { title: '员工与组织' } },
   { path: '/base', redirect: '/basic' },

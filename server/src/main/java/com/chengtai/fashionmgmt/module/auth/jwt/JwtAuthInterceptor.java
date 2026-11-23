@@ -38,6 +38,9 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
     private final JwtProperties jwtProperties;
     private final AuthLogProperties authLogProperties;
 
+    /**
+     * 校验请求 JWT，解析登录用户并写入线程上下文；失败时返回未授权响应。
+     */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
@@ -87,6 +90,9 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
         }
     }
 
+    /**
+     * 请求结束后清理登录用户上下文和追踪信息，防止线程复用串数据。
+     */
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         try {
@@ -103,6 +109,9 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
         }
     }
 
+    /**
+     * 向客户端返回统一的 401 JSON 响应。
+     */
     private void writeUnauthorized(HttpServletResponse response, String message, String failureCode) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
@@ -111,6 +120,9 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
         objectMapper.writeValue(response.getWriter(), Result.fail(401, message));
     }
 
+    /**
+     * 获取客户端真实 IP，优先读取代理转发头。
+     */
     private String clientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (StringUtils.hasText(forwarded)) {

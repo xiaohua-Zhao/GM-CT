@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chengtai.fashionmgmt.module.ms.mapper.MsOrderMapper">
+    <insert id="insertBusiness" useGeneratedKeys="true" keyProperty="entity.id">
+        INSERT INTO ct_gm.t_ms_order(misc_no, title, order_type, ref_type, ref_no, unit_id, supplier_id,
+                                     applicant_id, dept_id, apply_date, contract_no, amount, tax_rate, amount_tax,
+                                     pay_date_plan, expect_date, finish_date, next_due_date, cert_no, status,
+                                     attach_count, remark, created_at, updated_at, created_by, is_del)
+        VALUES (#{entity.miscNo}, #{entity.title}, #{entity.orderType}, #{entity.refType}, #{entity.refNo},
+                #{entity.unitId}, #{entity.supplierId}, #{entity.applicantId}, #{entity.deptId},
+                #{entity.applyDate}, #{entity.contractNo}, #{entity.amount}, #{entity.taxRate}, #{entity.amountTax},
+                #{entity.payDatePlan}, #{entity.expectDate}, #{entity.finishDate}, #{entity.nextDueDate},
+                #{entity.certNo}, #{entity.status}, #{entity.attachCount}, #{entity.remark},
+                NOW(), NOW(), #{createdBy}, 0)
+    </insert>
+
+    <update id="updateBusiness">
+        UPDATE ct_gm.t_ms_order
+        SET title=#{entity.title},
+            order_type=#{entity.orderType},
+            ref_type=#{entity.refType},
+            ref_no=#{entity.refNo},
+            unit_id=#{entity.unitId},
+            supplier_id=#{entity.supplierId},
+            applicant_id=#{entity.applicantId},
+            dept_id=#{entity.deptId},
+            apply_date=#{entity.applyDate},
+            contract_no=#{entity.contractNo},
+            amount=#{entity.amount},
+            tax_rate=#{entity.taxRate},
+            amount_tax=#{entity.amountTax},
+            pay_date_plan=#{entity.payDatePlan},
+            expect_date=#{entity.expectDate},
+            finish_date=#{entity.finishDate},
+            next_due_date=#{entity.nextDueDate},
+            cert_no=#{entity.certNo},
+            status=#{entity.status},
+            attach_count=#{entity.attachCount},
+            remark=#{entity.remark},
+            updated_at=NOW()
+        WHERE ms_order_id=#{entity.id} AND is_del=0
+    </update>
+
+    <select id="countByMiscNo" resultType="int">
+        SELECT COUNT(*) FROM ct_gm.t_ms_order
+        WHERE misc_no=#{miscNo} AND is_del=0
+        <if test="excludeId != null">AND ms_order_id != #{excludeId}</if>
+    </select>
+
+    <update id="recalculateTotals">
+        UPDATE ct_gm.t_ms_order
+        SET amount=(SELECT COALESCE(SUM(amount), 0)
+                    FROM ct_gm.t_ms_order_item
+                    WHERE ms_order_id=#{msOrderId} AND is_del=0),
+            amount_tax=ROUND((SELECT COALESCE(SUM(amount), 0)
+                              FROM ct_gm.t_ms_order_item
+                              WHERE ms_order_id=#{msOrderId} AND is_del=0) * (1 + tax_rate), 2),
+            updated_at=NOW()
+        WHERE ms_order_id=#{msOrderId} AND is_del=0
+    </update>
+
+    <update id="logicalDelete">
+        UPDATE ct_gm.t_ms_order SET is_del=1, updated_at=NOW()
+        WHERE ms_order_id=#{msOrderId} AND is_del=0
+    </update>
+</mapper>

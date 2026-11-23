@@ -53,19 +53,33 @@ const planStatusOptions=[{label:'未付',value:0},{label:'部分',value:1},{labe
 const invoiceTypeOptions=[{label:'销项发票',value:1},{label:'进项发票',value:2}]
 const invoiceStatusOptions=[{label:'待开票',value:1},{label:'已开票',value:2},{label:'已红冲',value:3},{label:'作废',value:4}]
 const rules={poNo:[{required:true,message:'请输入采购单号',trigger:'blur'}],supplierId:[{required:true,message:'请选择供应商',trigger:'change'}],poDate:[{required:true,message:'请选择采购日期',trigger:'change'}]}
+// 页面显示辅助函数：统一处理关联选项、枚举文本、金额格式和计划状态标签。
 const optionLabel=(k,i)=>lookupDefinitions[k].label(i),optionText=(o,v)=>o.find(x=>x.value===v)?.label||v,money=v=>v==null?'—':'¥'+Number(v).toFixed(2),planStatusType=v=>({0:'info',1:'warning',2:'success',3:'danger'}[v]||'info')
+// 格式化物料下拉选项显示文本。
 const materialLabel=id=>{const x=materialOptions.value.find(i=>Number(i.id)===Number(id));return x?optionLabel('materials',x):'—'}
+// 格式化供应商下拉选项显示文本。
 const supplierLabel=id=>{const x=supplierOptions.value.find(i=>Number(i.id)===Number(id));return x?optionLabel('suppliers',x):''}
+// 并行加载采购订单、明细、付款计划、发票和关联基础数据。
 async function loadAll(){loading.value=true;try{const id=route.params.id;const [o,i,p,v,sup,staff,dept,mat,orders]=await Promise.all([getPurchaseOrder(id),getPurchaseItems(id),getPurchasePlans(id),getPurchaseInvoices(id),loadLookupData('suppliers'),loadLookupData('staffs'),loadLookupData('depts'),loadLookupData('materials'),loadLookupData('orders')]);Object.keys(order).forEach(k=>delete order[k]);Object.assign(order,o.data.data||{});items.value=i.data.data||[];plans.value=p.data.data||[];invoices.value=v.data.data||[];supplierOptions.value=sup;staffOptions.value=staff;deptOptions.value=dept;materialOptions.value=mat;salesOrders.value=orders}catch(e){ElMessage.error(e?.response?.data?.message||e?.message||'加载采购详情失败')}finally{loading.value=false}}
+// 校验并保存当前采购订单基础信息。
 async function saveOrder(){const valid=await formRef.value?.validate().catch(()=>false);if(!valid)return;saving.value=true;try{await updatePurchaseOrder(order.id,order);ElMessage.success('采购订单已保存');await loadAll()}catch(e){ElMessage.error(e?.response?.data?.message||'保存失败')}finally{saving.value=false}}
+// 打开新增订单明细对话框并初始化空白表单。
 function openItemCreate(){itemEditingId.value=null;Object.keys(itemForm).forEach(k=>delete itemForm[k]);Object.assign(itemForm,{poId:order.id,deptId:order.deptId,materialId:null,part:'整件',unit:'米',qty:0,price:0,amount:0,qtyReceived:0,arriveDate:'',remark:''});itemDialog.value=true}
+// 打开明细编辑对话框并回填当前行数据。
 function openItemEdit(row){itemEditingId.value=row.id;Object.keys(itemForm).forEach(k=>delete itemForm[k]);Object.assign(itemForm,row);itemDialog.value=true}
+// 选择物料后自动带出物料计量单位。
 function syncMaterialUnit(id){const x=materialOptions.value.find(i=>Number(i.id)===Number(id));if(x)itemForm.unit=x.unit||itemForm.unit}
+// 新增或修改采购明细并刷新明细列表。
 async function saveItem(){saving.value=true;try{if(itemEditingId.value)await updatePurchaseItem(itemEditingId.value,itemForm);else await createPurchaseItem(itemForm);ElMessage.success('采购明细已保存');itemDialog.value=false;const r=await getPurchaseItems(order.id);items.value=r.data.data||[]}catch(e){ElMessage.error(e?.response?.data?.message||'保存失败')}finally{saving.value=false}}
+// 确认后删除已保存明细并重新加载列表。
 async function removeItem(row){try{await ElMessageBox.confirm('确认删除该采购明细吗？','删除确认',{type:'warning'});await deletePurchaseItem(row.id);const r=await getPurchaseItems(order.id);items.value=r.data.data||[]}catch(e){if(e!=='cancel'&&e!=='close')ElMessage.error(e?.response?.data?.message||'删除失败')}}
+// 打开新增收款计划对话框并初始化空白表单。
 function openPlanCreate(){planEditingId.value=null;Object.keys(planForm).forEach(k=>delete planForm[k]);Object.assign(planForm,{planNo:'',deptId:order.deptId,direction:2,sourceType:2,sourceId:order.id,sourceNo:order.poNo,partnerType:2,partnerId:order.supplierId,partnerName:supplierLabel(order.supplierId),seqNo:plans.value.length+1,nodeType:1,ratio:null,planDate:'',planAmount:0,paidAmount:0,status:0,remark:''});planDialog.value=true}
+// 打开编辑收付款计划对话框并回填当前行。
 function openPlanEdit(row){planEditingId.value=row.id;Object.keys(planForm).forEach(k=>delete planForm[k]);Object.assign(planForm,row);planDialog.value=true}
+// 新增或修改付款计划并刷新计划列表。
 async function savePlan(){saving.value=true;try{if(planEditingId.value)await updatePurchasePlan(planEditingId.value,planForm);else await createPurchasePlan(planForm);ElMessage.success('付款计划已保存');planDialog.value=false;const r=await getPurchasePlans(order.id);plans.value=r.data.data||[]}catch(e){ElMessage.error(e?.response?.data?.message||'保存失败')}finally{saving.value=false}}
+// 确认后删除已保存收付款计划并重新加载列表。
 async function removePlan(row){try{await ElMessageBox.confirm('确认删除该付款计划吗？','删除确认',{type:'warning'});await deletePurchasePlan(row.id);const r=await getPurchasePlans(order.id);plans.value=r.data.data||[]}catch(e){if(e!=='cancel'&&e!=='close')ElMessage.error(e?.response?.data?.message||'删除失败')}}
 onMounted(loadAll)
 </script>

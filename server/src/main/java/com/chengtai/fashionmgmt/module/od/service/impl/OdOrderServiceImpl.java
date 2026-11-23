@@ -17,7 +17,7 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 
-/** 销售订单业务服务，保存和修改均使用自定义 SQL。 */
+/** 订单业务服务，保存和修改均使用自定义 SQL。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -95,6 +95,9 @@ public class OdOrderServiceImpl extends AbstractBaseService<OdOrderMapper, OdOrd
         if (entity.getAmountTotal().compareTo(BigDecimal.ZERO) < 0) throw new BusinessValidationException("订单金额不能小于0");
     }
 
+    /**
+     * 获取当前登录用户 ID；未登录时返回 null，供自定义 SQL 记录创建人。
+     */
     private Long currentUserId() {
         LoginUserContext.LoginUser user = LoginUserContext.get();
         return user == null ? null : user.id();

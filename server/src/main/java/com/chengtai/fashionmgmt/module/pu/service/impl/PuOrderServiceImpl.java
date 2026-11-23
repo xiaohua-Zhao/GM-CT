@@ -80,6 +80,9 @@ public class PuOrderServiceImpl extends AbstractBaseService<PuOrderMapper, PuOrd
         if (entity.getAmount().compareTo(BigDecimal.ZERO) < 0) throw new BusinessValidationException("采购金额不能小于0");
     }
 
+    /**
+     * 获取当前登录用户 ID；未登录时返回 null，供自定义 SQL 记录创建人。
+     */
     private Long currentUserId() {
         LoginUserContext.LoginUser user = LoginUserContext.get();
         return user == null ? null : user.id();

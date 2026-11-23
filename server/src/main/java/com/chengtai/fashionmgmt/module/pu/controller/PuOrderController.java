@@ -19,12 +19,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class PuOrderController extends BaseCrudController<PuOrder> {
     private final PuOrderService service;
 
+    /**
+     * 返回采购订单模块的业务 Service，供通用 CRUD 基类完成分层调用。
+     */
     @Override
     protected BaseService<PuOrder> service() { return service; }
 
+    /**
+     * 返回采购订单列表模糊查询使用的数据库字段名。
+     */
     @Override
     protected String keywordField() { return "po_no"; }
 
+    /**
+     * 返回“采购订单”模块名称，用于接口日志、Swagger 描述和错误提示。
+     */
     @Override
     protected String moduleName() { return "采购订单"; }
 }

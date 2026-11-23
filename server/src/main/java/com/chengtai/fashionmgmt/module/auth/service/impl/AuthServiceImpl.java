@@ -65,6 +65,9 @@ public class AuthServiceImpl implements AuthService {
     private final JwtProperties jwtProperties;
     private final AuthLogProperties authLogProperties;
 
+    /**
+     * 校验账号、密码和员工状态，成功后生成 JWT 并记录登录日志。
+     */
     @Override
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
         long startNanos = System.nanoTime();
@@ -122,6 +125,9 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
+    /**
+     * 根据员工 ID 加载部门、角色和权限，组装登录用户信息。
+     */
     @Override
     public LoginUserInfo getUserInfo(Long staffId) {
         CtStaff staff = staffMapper.selectById(staffId);
@@ -131,6 +137,9 @@ public class AuthServiceImpl implements AuthService {
         return buildUserInfo(staff, loadRoles(staffId));
     }
 
+    /**
+     * 统一记录登录失败日志并抛出认证异常，避免泄露具体校验细节。
+     */
     private void failLogin(Long staffId, String staffCode, String loginName, String failureCode,
                            String message, HttpServletRequest request, long startNanos) {
         long costMs = costMs(startNanos);
@@ -139,10 +148,16 @@ public class AuthServiceImpl implements AuthService {
                 loginName, failureCode, clientIp(request), clientType(request), costMs);
     }
 
+    /**
+     * 判断员工状态是否为启用状态。
+     */
     private boolean isActive(Integer status) {
         return Objects.equals(status, 1) || Objects.equals(status, 2);
     }
 
+    /**
+     * 加载员工当前有效且启用的角色列表。
+     */
     private List<CtRole> loadRoles(Long staffId) {
         List<CtStaffRole> relations = staffRoleMapper.selectList(new LambdaQueryWrapper<CtStaffRole>()
                 .eq(CtStaffRole::getStaffId, staffId)
@@ -156,6 +171,9 @@ public class AuthServiceImpl implements AuthService {
                 .toList();
     }
 
+    /**
+     * 组装登录用户基础信息、部门、角色编码和角色名称。
+     */
     private LoginUserInfo buildUserInfo(CtStaff staff, List<CtRole> roles) {
         String deptName = null;
         if (staff.getDeptId() != null) {
@@ -175,6 +193,9 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
+    /**
+     * 聚合员工所属角色、部门和个人的页面权限，生成前端可用的权限标识。
+     */
     private List<String> buildPermissions(CtStaff staff, List<CtRole> roles) {
         if (roles.stream().anyMatch(role -> "ADMIN".equals(role.getRoleCode()))) {
             return List.of("*");
@@ -208,6 +229,9 @@ public class AuthServiceImpl implements AuthService {
         return new ArrayList<>(result);
     }
 
+    /**
+     * 更新员工最后登录时间。
+     */
     private void updateLastLogin(Long staffId) {
         CtStaff update = new CtStaff();
         update.setId(staffId);
@@ -215,6 +239,9 @@ public class AuthServiceImpl implements AuthService {
         staffMapper.updateById(update);
     }
 
+    /**
+     * 写入登录成功或失败日志；日志异常不会影响主登录流程。
+     */
     private void writeLoginLog(Long staffId, String staffCode, String loginName, int status, String message,
                                String failureCode, HttpServletRequest request, long costMs, LocalDateTime tokenExpireAt) {
         if (!authLogProperties.isLoginLogEnabled()) {
@@ -241,10 +268,16 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    /**
+     * 将纳秒耗时转换为毫秒，供登录与访问日志统计。
+     */
     private long costMs(long startNanos) {
         return (System.nanoTime() - startNanos) / 1_000_000;
     }
 
+    /**
+     * 根据 User-Agent 判断请求来自 PC、App、微信小程序或 API 客户端。
+     */
     private String clientType(HttpServletRequest request) {
         String ua = request.getHeader("User-Agent");
         if (ua == null) {
@@ -263,6 +296,9 @@ public class AuthServiceImpl implements AuthService {
         return "PC_WEB";
     }
 
+    /**
+     * 获取客户端真实 IP，优先读取代理转发头。
+     */
     private String clientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (StringUtils.hasText(forwarded)) {
@@ -272,6 +308,9 @@ public class AuthServiceImpl implements AuthService {
         return StringUtils.hasText(realIp) ? realIp : request.getRemoteAddr();
     }
 
+    /**
+     * 将字符串截断到指定长度，避免写入日志表时超长。
+     */
     private String truncate(String value, int maxLength) {
         if (value == null) {
             return null;

@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.chengtai.fashionmgmt.module.pu.mapper.PuOrderItemMapper">
-  <insert id="insertBusiness" useGeneratedKeys="true" keyProperty="entity.id">INSERT INTO t_pu_order_item(dept_id,po_id,material_id,part,unit,qty,price,amount,qty_received,arrive_date,remark,created_at,updated_at,created_by,is_del) VALUES(#{entity.deptId},#{entity.poId},#{entity.materialId},#{entity.part},#{entity.unit},#{entity.qty},#{entity.price},#{entity.amount},#{entity.qtyReceived},#{entity.arriveDate},#{entity.remark},NOW(),NOW(),#{createdBy},0)</insert>
-  <update id="updateBusiness">UPDATE t_pu_order_item SET material_id=#{entity.materialId},part=#{entity.part},unit=#{entity.unit},qty=#{entity.qty},price=#{entity.price},amount=#{entity.amount},qty_received=#{entity.qtyReceived},arrive_date=#{entity.arriveDate},remark=#{entity.remark},updated_at=NOW() WHERE po_item_id=#{entity.id} AND is_del=0</update>
+    <insert id="insertBusiness" useGeneratedKeys="true"
+            keyProperty="entity.id">INSERT INTO ct_gm.t_pu_order_item(dept_id, po_id, material_id, part, unit, qty,
+                                                                      price, amount, qty_received, arrive_date, remark,
+                                                                      created_at, updated_at, created_by, is_del)
+                                    VALUES (#{entity.deptId}, #{entity.poId}, #{entity.materialId}, #{entity.part},
+                                            #{entity.unit}, #{entity.qty}, #{entity.price}, #{entity.amount},
+                                            #{entity.qtyReceived}, #{entity.arriveDate}, #{entity.remark}, NOW(), NOW(),
+                                            #{createdBy}, 0)</insert>
+    <update id="updateBusiness">UPDATE ct_gm.t_pu_order_item
+                                SET material_id=#{entity.materialId},
+                                    part=#{entity.part},
+                                    unit=#{entity.unit},
+                                    qty=#{entity.qty},
+                                    price=#{entity.price},
+                                    amount=#{entity.amount},
+                                    qty_received=#{entity.qtyReceived},
+                                    arrive_date=#{entity.arriveDate},
+                                    remark=#{entity.remark},
+                                    updated_at=NOW()
+                                WHERE po_item_id = #{entity.id}
+                                  AND is_del = 0</update>
 </mapper>
