@@ -1,8 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.chengtai.fashionmgmt.module.fin.mapper.FinPlanMapper">
-  <insert id="insertBusiness" useGeneratedKeys="true" keyProperty="entity.id">INSERT INTO t_fin_plan(dept_id,plan_no,direction,source_type,source_id,source_no,partner_type,partner_id,partner_name,seq_no,node_type,ratio,plan_date,plan_amount,paid_amount,paid_date,status,remark,created_at,updated_at,created_by,is_del) VALUES(#{entity.deptId},#{entity.planNo},#{entity.direction},#{entity.sourceType},#{entity.sourceId},#{entity.sourceNo},#{entity.partnerType},#{entity.partnerId},#{entity.partnerName},#{entity.seqNo},#{entity.nodeType},#{entity.ratio},#{entity.planDate},#{entity.planAmount},#{entity.paidAmount},#{entity.paidDate},#{entity.status},#{entity.remark},NOW(),NOW(),#{createdBy},0)</insert>
-  <update id="updateBusiness">UPDATE t_fin_plan SET seq_no=#{entity.seqNo},node_type=#{entity.nodeType},ratio=#{entity.ratio},plan_date=#{entity.planDate},plan_amount=#{entity.planAmount},paid_amount=#{entity.paidAmount},paid_date=#{entity.paidDate},status=#{entity.status},remark=#{entity.remark},updated_at=NOW() WHERE fin_plan_id=#{entity.id} AND is_del=0</update>
-  <select id="countByPlanNo" resultType="int">SELECT COUNT(*) FROM t_fin_plan WHERE plan_no=#{planNo} AND is_del=0<if test="excludeId != null"> AND fin_plan_id != #{excludeId}</if></select>
-  <select id="countBySourceSeq" resultType="int">SELECT COUNT(*) FROM t_fin_plan WHERE source_type=#{sourceType} AND source_id=#{sourceId} AND seq_no=#{seqNo} AND is_del=0<if test="excludeId != null"> AND fin_plan_id != #{excludeId}</if></select>
+    <insert id="insertBusiness" useGeneratedKeys="true" keyProperty="entity.id">INSERT INTO ct_gm.t_fin_plan(dept_id,
+                                                                                                             plan_no,
+                                                                                                             direction,
+                                                                                                             source_type,
+                                                                                                             source_id,
+                                                                                                             source_no,
+                                                                                                             partner_type,
+                                                                                                             partner_id,
+                                                                                                             partner_name,
+                                                                                                             seq_no,
+                                                                                                             node_type,
+                                                                                                             ratio,
+                                                                                                             plan_date,
+                                                                                                             plan_amount,
+                                                                                                             paid_amount,
+                                                                                                             paid_date,
+                                                                                                             status,
+                                                                                                             remark,
+                                                                                                             created_at,
+                                                                                                             updated_at,
+                                                                                                             created_by,
+                                                                                                             is_del)
+                                                                                VALUES (#{entity.deptId},
+                                                                                        #{entity.planNo},
+                                                                                        #{entity.direction},
+                                                                                        #{entity.sourceType},
+                                                                                        #{entity.sourceId},
+                                                                                        #{entity.sourceNo},
+                                                                                        #{entity.partnerType},
+                                                                                        #{entity.partnerId},
+                                                                                        #{entity.partnerName},
+                                                                                        #{entity.seqNo},
+                                                                                        #{entity.nodeType},
+                                                                                        #{entity.ratio},
+                                                                                        #{entity.planDate},
+                                                                                        #{entity.planAmount},
+                                                                                        #{entity.paidAmount},
+                                                                                        #{entity.paidDate},
+                                                                                        #{entity.status},
+                                                                                        #{entity.remark}, NOW(), NOW(),
+                                                                                        #{createdBy}, 0)</insert>
+    <update id="updateBusiness">UPDATE ct_gm.t_fin_plan
+                                SET seq_no=#{entity.seqNo},
+                                    node_type=#{entity.nodeType},
+                                    ratio=#{entity.ratio},
+                                    plan_date=#{entity.planDate},
+                                    plan_amount=#{entity.planAmount},
+                                    paid_amount=#{entity.paidAmount},
+                                    paid_date=#{entity.paidDate},
+                                    status=#{entity.status},
+                                    remark=#{entity.remark},
+                                    updated_at=NOW()
+                                WHERE fin_plan_id = #{entity.id}
+                                  AND is_del = 0</update>
+    <select id="countByPlanNo" resultType="int">SELECT COUNT(*) FROM ct_gm.t_fin_plan WHERE plan_no=#{planNo} AND
+        is_del=0
+        <if test="excludeId != null">AND fin_plan_id != #{excludeId}</if>
+    </select>
+    <select id="countBySourceSeq" resultType="int">SELECT COUNT(*) FROM ct_gm.t_fin_plan WHERE source_type=#{sourceType}
+        AND source_id=#{sourceId} AND seq_no=#{seqNo} AND is_del=0
+        <if test="excludeId != null">AND fin_plan_id != #{excludeId}</if>
+    </select>
 </mapper>

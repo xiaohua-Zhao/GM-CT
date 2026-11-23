@@ -9,16 +9,16 @@ import java.util.Map;
 @Component
 public class CodeTargetRegistry {
     private static final Map<String, Target> TARGETS = Map.ofEntries(
-            Map.entry("STAFF", new Target("t_ct_staff", "staff_code")),
-            Map.entry("DEPT", new Target("t_ct_dept", "dept_code")),
-            Map.entry("UNIT", new Target("t_sys_unit", "unit_code")),
-            Map.entry("SUPPLIER", new Target("t_sys_supplier", "sup_code")),
-            Map.entry("STYLE", new Target("t_sys_style", "style_code")),
-            Map.entry("MATERIAL", new Target("t_sys_material", "mat_code")),
-            Map.entry("PROCESS", new Target("t_sys_process", "process_code")),
-            Map.entry("ORDER", new Target("t_od_order", "order_no")),
-            Map.entry("PURCHASE", new Target("t_pu_order", "po_no")),
-            Map.entry("SAMPLE", new Target("t_sm_sample", "sample_no"))
+            Map.entry("STAFF", new Target("ct_gm.t_ct_staff", "staff_code")),
+            Map.entry("DEPT", new Target("ct_gm.t_ct_dept", "dept_code")),
+            Map.entry("UNIT", new Target("ct_gm.t_sys_unit", "unit_code")),
+            Map.entry("SUPPLIER", new Target("ct_gm.t_sys_supplier", "sup_code")),
+            Map.entry("STYLE", new Target("ct_gm.t_sys_style", "style_code")),
+            Map.entry("MATERIAL", new Target("ct_gm.t_sys_material", "mat_code")),
+            Map.entry("PROCESS", new Target("ct_gm.t_sys_process", "process_code")),
+            Map.entry("ORDER", new Target("ct_gm.t_od_order", "order_no")),
+            Map.entry("PURCHASE", new Target("ct_gm.t_pu_order", "po_no")),
+            Map.entry("SAMPLE", new Target("ct_gm.t_sm_sample", "sample_no"))
     );
 
     private final JdbcTemplate jdbcTemplate;

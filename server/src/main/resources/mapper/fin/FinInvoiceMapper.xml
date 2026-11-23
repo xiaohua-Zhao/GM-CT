@@ -1,7 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.chengtai.fashionmgmt.module.fin.mapper.FinInvoiceMapper">
-  <insert id="insertBusiness" useGeneratedKeys="true" keyProperty="entity.id">INSERT INTO t_fin_invoice(dept_id,invoice_no,invoice_type,invoice_kind,invoice_title,tax_no,partner_type,partner_id,partner_name,order_id,order_no,po_id,po_no,fin_settle_id,fin_flow_id,amount,tax_rate,tax_amount,total_amount,invoice_date,status,remark,created_at,updated_at,created_by,is_del) VALUES(#{entity.deptId},#{entity.invoiceNo},#{entity.invoiceType},#{entity.invoiceKind},#{entity.invoiceTitle},#{entity.taxNo},#{entity.partnerType},#{entity.partnerId},#{entity.partnerName},#{entity.orderId},#{entity.orderNo},#{entity.poId},#{entity.poNo},#{entity.finSettleId},#{entity.finFlowId},#{entity.amount},#{entity.taxRate},#{entity.taxAmount},#{entity.totalAmount},#{entity.invoiceDate},#{entity.status},#{entity.remark},NOW(),NOW(),#{createdBy},0)</insert>
-  <update id="updateBusiness">UPDATE t_fin_invoice SET invoice_type=#{entity.invoiceType},invoice_kind=#{entity.invoiceKind},invoice_title=#{entity.invoiceTitle},tax_no=#{entity.taxNo},partner_type=#{entity.partnerType},partner_id=#{entity.partnerId},partner_name=#{entity.partnerName},amount=#{entity.amount},tax_rate=#{entity.taxRate},tax_amount=#{entity.taxAmount},total_amount=#{entity.totalAmount},invoice_date=#{entity.invoiceDate},status=#{entity.status},remark=#{entity.remark},updated_at=NOW() WHERE fin_invoice_id=#{entity.id} AND is_del=0</update>
-  <select id="countByInvoiceNo" resultType="int">SELECT COUNT(*) FROM t_fin_invoice WHERE invoice_no=#{invoiceNo} AND is_del=0<if test="excludeId != null"> AND fin_invoice_id != #{excludeId}</if></select>
+    <insert id="insertBusiness" useGeneratedKeys="true" keyProperty="entity.id">INSERT INTO ct_gm.t_fin_invoice(dept_id,
+                                                                                                                invoice_no,
+                                                                                                                invoice_type,
+                                                                                                                invoice_kind,
+                                                                                                                invoice_title,
+                                                                                                                tax_no,
+                                                                                                                partner_type,
+                                                                                                                partner_id,
+                                                                                                                partner_name,
+                                                                                                                order_id,
+                                                                                                                order_no,
+                                                                                                                po_id,
+                                                                                                                po_no,
+                                                                                                                fin_settle_id,
+                                                                                                                fin_flow_id,
+                                                                                                                amount,
+                                                                                                                tax_rate,
+                                                                                                                tax_amount,
+                                                                                                                total_amount,
+                                                                                                                invoice_date,
+                                                                                                                status,
+                                                                                                                remark,
+                                                                                                                created_at,
+                                                                                                                updated_at,
+                                                                                                                created_by,
+                                                                                                                is_del)
+                                                                                VALUES (#{entity.deptId},
+                                                                                        #{entity.invoiceNo},
+                                                                                        #{entity.invoiceType},
+                                                                                        #{entity.invoiceKind},
+                                                                                        #{entity.invoiceTitle},
+                                                                                        #{entity.taxNo},
+                                                                                        #{entity.partnerType},
+                                                                                        #{entity.partnerId},
+                                                                                        #{entity.partnerName},
+                                                                                        #{entity.orderId},
+                                                                                        #{entity.orderNo},
+                                                                                        #{entity.poId}, #{entity.poNo},
+                                                                                        #{entity.finSettleId},
+                                                                                        #{entity.finFlowId},
+                                                                                        #{entity.amount},
+                                                                                        #{entity.taxRate},
+                                                                                        #{entity.taxAmount},
+                                                                                        #{entity.totalAmount},
+                                                                                        #{entity.invoiceDate},
+                                                                                        #{entity.status},
+                                                                                        #{entity.remark}, NOW(), NOW(),
+                                                                                        #{createdBy}, 0)</insert>
+    <update id="updateBusiness">UPDATE ct_gm.t_fin_invoice
+                                SET invoice_type=#{entity.invoiceType},
+                                    invoice_kind=#{entity.invoiceKind},
+                                    invoice_title=#{entity.invoiceTitle},
+                                    tax_no=#{entity.taxNo},
+                                    partner_type=#{entity.partnerType},
+                                    partner_id=#{entity.partnerId},
+                                    partner_name=#{entity.partnerName},
+                                    amount=#{entity.amount},
+                                    tax_rate=#{entity.taxRate},
+                                    tax_amount=#{entity.taxAmount},
+                                    total_amount=#{entity.totalAmount},
+                                    invoice_date=#{entity.invoiceDate},
+                                    status=#{entity.status},
+                                    remark=#{entity.remark},
+                                    updated_at=NOW()
+                                WHERE fin_invoice_id = #{entity.id}
+                                  AND is_del = 0</update>
+    <select id="countByInvoiceNo" resultType="int">SELECT COUNT(*) FROM ct_gm.t_fin_invoice WHERE
+        invoice_no=#{invoiceNo} AND is_del=0
+        <if test="excludeId != null">AND fin_invoice_id != #{excludeId}</if>
+    </select>
 </mapper>

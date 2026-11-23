@@ -13,7 +13,7 @@ import java.math.BigDecimal;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_pu_order")
+@TableName("ct_gm.t_pu_order")
 public class PuOrder extends BaseEntity {
     @TableId(value = "po_id", type = IdType.AUTO)
     private Long id;

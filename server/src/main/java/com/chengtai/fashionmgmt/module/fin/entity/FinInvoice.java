@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 /** 发票信息，对应 t_fin_invoice。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_fin_invoice")
+@TableName("ct_gm.t_fin_invoice")
 public class FinInvoice extends BaseEntity {
     @TableId(value="fin_invoice_id",type=IdType.AUTO)
     private Long id;

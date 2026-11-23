@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 /** 收付款计划，对应 t_fin_plan。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_fin_plan")
+@TableName("ct_gm.t_fin_plan")
 public class FinPlan extends BaseEntity {
     @TableId(value="fin_plan_id",type=IdType.AUTO)
     private Long id;

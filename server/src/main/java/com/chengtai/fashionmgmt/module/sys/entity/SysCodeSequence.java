@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 /** 编码流水序列。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_sys_code_sequence")
+@TableName("ct_gm.t_sys_code_sequence")
 public class SysCodeSequence extends BaseEntity {
     @TableId(value = "sequence_id", type = IdType.AUTO)
     private Long id;

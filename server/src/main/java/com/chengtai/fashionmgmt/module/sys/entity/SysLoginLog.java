@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * 登录日志实体，对应表 t_sys_login_log。
  */
 @Data
-@TableName("t_sys_login_log")
+@TableName("ct_gm.t_sys_login_log")
 public class SysLoginLog {
     @TableId(value = "login_log_id", type = IdType.AUTO)
     private Long id;

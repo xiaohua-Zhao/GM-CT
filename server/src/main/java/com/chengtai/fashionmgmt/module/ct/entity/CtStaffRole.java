@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_ct_staff_role")
+@TableName("ct_gm.t_ct_staff_role")
 public class CtStaffRole extends BaseEntity {
     @TableId(value = "staff_role_id", type = IdType.AUTO)
     private Long id;
