@@ -11,6 +11,9 @@ import com.chengtai.fashionmgmt.module.auth.context.LoginUserContext;
 import com.chengtai.fashionmgmt.module.pl.entity.PlProdPlan;
 import com.chengtai.fashionmgmt.module.pl.mapper.PlProdPlanMapper;
 import com.chengtai.fashionmgmt.module.pl.mapper.PlTaskMapper;
+import com.chengtai.fashionmgmt.module.od.entity.OdOrder;
+import com.chengtai.fashionmgmt.module.od.mapper.OdOrderMapper;
+import com.chengtai.fashionmgmt.module.od.service.OdOrderFlowService;
 import com.chengtai.fashionmgmt.module.pl.service.PlProdPlanService;
 import com.chengtai.fashionmgmt.module.sys.service.CodeGeneratorService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,36 @@ public class PlProdPlanServiceImpl extends AbstractBaseService<PlProdPlanMapper,
     private final PlTaskMapper taskMapper;
     private final CodeGeneratorService codeGeneratorService;
     private final BusinessLogJson logJson;
+    private final OdOrderFlowService orderFlowService;
+    private final OdOrderMapper orderMapper;
+
+    /**
+     * 分页查询可创建生产计划的订单。
+     */
+    @Override
+    public IPage<OdOrder> pageEligibleOrders(long current, long size, String keyword, Long unitId,
+                                             String orderDateStart, String orderDateEnd,
+                                             String deliveryDateStart, String deliveryDateEnd) {
+        QueryWrapper<OdOrder> query = new QueryWrapper<>();
+        query.eq("is_del", 0)
+                .eq("review_result", 1)
+                .eq("is_producible", 1)
+                .in("status", 2, 3, 4, 6)
+                .apply("NOT EXISTS (SELECT 1 FROM ct_gm.t_pl_prod_plan p WHERE p.order_id=ct_gm.t_od_order.order_id AND p.is_del=0)");
+        if (StringUtils.hasText(keyword)) {
+            String value = keyword.trim();
+            query.and(wrapper -> wrapper.like("order_no", value)
+                    .or().like("contract_no", value)
+                    .or().apply("unit_id IN (SELECT unit_id FROM ct_gm.t_sys_unit WHERE unit_name LIKE CONCAT('%', {0}, '%') AND is_del=0)", value));
+        }
+        query.eq(unitId != null, "unit_id", unitId)
+                .ge(StringUtils.hasText(orderDateStart), "order_date", orderDateStart)
+                .le(StringUtils.hasText(orderDateEnd), "order_date", orderDateEnd)
+                .ge(StringUtils.hasText(deliveryDateStart), "delivery_date_plan", deliveryDateStart)
+                .le(StringUtils.hasText(deliveryDateEnd), "delivery_date_plan", deliveryDateEnd)
+                .orderByDesc("created_at");
+        return orderMapper.selectPage(new Page<>(current, size), query);
+    }
 
     /**
      * 新增生产计划：自动生成计划号、校验订单唯一性并写入数据库。
@@ -144,6 +177,7 @@ public class PlProdPlanServiceImpl extends AbstractBaseService<PlProdPlanMapper,
         if (entity.getOrderId() == null) {
             throw new BusinessValidationException("请选择订单");
         }
+        orderFlowService.assertCanCreatePlan(entity.getOrderId());
         if (!StringUtils.hasText(entity.getStartDate()) || !StringUtils.hasText(entity.getEndDate())) {
             throw new BusinessValidationException("请选择计划开工日和完工日");
         }

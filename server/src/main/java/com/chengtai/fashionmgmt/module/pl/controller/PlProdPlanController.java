@@ -1,12 +1,18 @@
 package com.chengtai.fashionmgmt.module.pl.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.chengtai.fashionmgmt.common.BaseCrudController;
 import com.chengtai.fashionmgmt.common.BaseService;
+import com.chengtai.fashionmgmt.common.Result;
+import com.chengtai.fashionmgmt.module.od.entity.OdOrder;
 import com.chengtai.fashionmgmt.module.pl.entity.PlProdPlan;
 import com.chengtai.fashionmgmt.module.pl.service.PlProdPlanService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** 生产计划接口，调用链：Controller -> Service -> Mapper -> ct_gm.t_pl_prod_plan。 */
@@ -39,5 +45,22 @@ public class PlProdPlanController extends BaseCrudController<PlProdPlan> {
     @Override
     protected String moduleName() {
         return "生产计划";
+    }
+
+    /**
+     * 分页查询可创建生产计划的订单。
+     */
+    @Operation(summary = "查询可排产订单")
+    @GetMapping("/eligible-orders")
+    public Result<IPage<OdOrder>> eligibleOrders(@RequestParam(defaultValue = "1") long current,
+                                                  @RequestParam(defaultValue = "10") long size,
+                                                  @RequestParam(required = false) String keyword,
+                                                  @RequestParam(required = false) Long unitId,
+                                                  @RequestParam(required = false) String orderDateStart,
+                                                  @RequestParam(required = false) String orderDateEnd,
+                                                  @RequestParam(required = false) String deliveryDateStart,
+                                                  @RequestParam(required = false) String deliveryDateEnd) {
+        return Result.success(service.pageEligibleOrders(current, size, keyword, unitId,
+                orderDateStart, orderDateEnd, deliveryDateStart, deliveryDateEnd));
     }
 }

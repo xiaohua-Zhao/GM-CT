@@ -64,4 +64,40 @@
                                        updated_at=NOW()
                                    WHERE order_id = #{orderId}
                                      AND is_del = 0</update>
+    <select id="selectActiveById" resultType="com.chengtai.fashionmgmt.module.od.entity.OdOrder">
+        SELECT o.*, o.order_id AS id FROM ct_gm.t_od_order o WHERE o.order_id=#{orderId} AND o.is_del=0
+    </select>
+    <update id="updateReviewPassed">
+        UPDATE ct_gm.t_od_order SET review_result=1,review_by=#{reviewBy},review_time=#{reviewTime},status=2,
+            close_reason_type=NULL,close_reason=NULL,close_by=NULL,close_time=NULL,updated_at=NOW()
+        WHERE order_id=#{orderId} AND is_del=0
+    </update>
+    <update id="updateReviewRejected">
+        UPDATE ct_gm.t_od_order SET review_result=2,review_by=#{reviewBy},review_time=#{reviewTime},status=8,
+            close_reason_type=#{closeReasonType},close_reason=#{closeReason},close_by=#{reviewBy},close_time=#{reviewTime},updated_at=NOW()
+        WHERE order_id=#{orderId} AND is_del=0
+    </update>
+    <update id="updateClose">
+        UPDATE ct_gm.t_od_order SET status=8,close_reason_type=#{closeReasonType},close_reason=#{closeReason},
+            close_by=#{closeBy},close_time=#{closeTime},updated_at=NOW()
+        WHERE order_id=#{orderId} AND is_del=0
+    </update>
+    <update id="updateStatus">
+        UPDATE ct_gm.t_od_order SET status=#{status},updated_at=NOW() WHERE order_id=#{orderId} AND is_del=0
+    </update>
+    <insert id="insertStatusLog">
+        INSERT INTO ct_gm.t_od_order_status_log(dept_id,order_id,from_status,to_status,operator_id,remark,created_at)
+        VALUES(#{deptId},#{orderId},#{fromStatus},#{toStatus},#{operatorId},#{remark},NOW())
+    </insert>
+    <select id="selectPreviousStatus" resultType="java.lang.Integer">
+        SELECT from_status FROM ct_gm.t_od_order_status_log WHERE order_id=#{orderId} AND to_status=7
+        ORDER BY order_status_log_id DESC LIMIT 1
+    </select>
+    <update id="releaseForProduction">
+        UPDATE ct_gm.t_od_order SET is_producible=1, release_time=#{releaseTime}, updated_at=NOW()
+        WHERE order_id=#{orderId} AND is_del=0
+    </update>
+    <select id="countActiveProductionPlans" resultType="int">
+        SELECT COUNT(*) FROM ct_gm.t_pl_prod_plan WHERE order_id=#{orderId} AND is_del=0
+    </select>
 </mapper>

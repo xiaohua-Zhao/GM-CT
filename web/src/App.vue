@@ -85,6 +85,7 @@ const menuGroups = [
   {
     label: '生产管理',
     items: [
+      { label: '样衣管理', path: '/samples', icon: Tickets },
       { label: '生产计划', path: '/production', icon: Document, exact: true },
       { label: '裁剪任务', path: '/production/cutting', icon: SetUp },
       { label: '缝制任务', path: '/production/sewing', icon: SetUp },

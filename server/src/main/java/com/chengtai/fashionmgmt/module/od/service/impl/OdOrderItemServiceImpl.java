@@ -76,6 +76,16 @@ public class OdOrderItemServiceImpl extends AbstractBaseService<OdOrderItemMappe
         return list(new LambdaQueryWrapper<OdOrderItem>().eq(OdOrderItem::getOrderId, orderId).orderByAsc(OdOrderItem::getItemNo));
     }
 
+    /** 判断订单是否处于允许维护明细的生产前状态。 */
+    private boolean isEditableStatus(OdOrder order) {
+        if (Integer.valueOf(1).equals(order.getStatus()) || Integer.valueOf(2).equals(order.getStatus())) return true;
+        if (Integer.valueOf(7).equals(order.getStatus())) {
+            Integer previous = orderMapper.selectPreviousStatus(order.getId());
+            return previous == null || Integer.valueOf(1).equals(previous) || Integer.valueOf(2).equals(previous);
+        }
+        return false;
+    }
+
     /** 填充默认值并重新计算当前模块的业务金额和汇总字段。 */
     private void normalize(OdOrderItem entity) {
         if (entity.getItemNo() == null) entity.setItemNo(1);
@@ -91,6 +101,9 @@ public class OdOrderItemServiceImpl extends AbstractBaseService<OdOrderItemMappe
         if (entity.getOrderId() == null) throw new BusinessValidationException("订单ID不能为空");
         OdOrder order = orderMapper.selectById(entity.getOrderId());
         if (order == null) throw new BusinessValidationException("订单不存在");
+        if (!isEditableStatus(order)) {
+            throw new BusinessValidationException("订单已开始生产或已关闭，不允许维护明细");
+        }
         if (entity.getStyleId() == null) throw new BusinessValidationException("请选择款式");
         if (!StringUtils.hasText(entity.getStyleCode())) throw new BusinessValidationException("款号不能为空");
         if (entity.getQty().signum() < 0) throw new BusinessValidationException("数量不能小于0");

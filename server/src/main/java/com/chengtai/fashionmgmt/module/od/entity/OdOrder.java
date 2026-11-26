@@ -42,4 +42,26 @@ public class OdOrder extends BaseEntity {
     private Integer status; // 订单状态
     private Integer delayDays; // 逾期天数
     private String remark; // 备注
+    private Integer reviewResult; // 评审结论 0未评审 1可做 2不可做
+    private Long reviewBy; // 评审人
+    private String reviewTime; // 评审时间
+    private Integer closeReasonType; // 关闭原因类型
+    private String closeReason; // 关闭原因说明
+    private Long closeBy; // 关闭人
+    private String closeTime; // 关闭时间
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private java.math.BigDecimal grossProfit; // 毛利额，实时计算
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private java.math.BigDecimal grossMarginRate; // 毛利率，实时计算
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private java.math.BigDecimal materialCost; // 物料成本，实时计算
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private java.math.BigDecimal laborCost; // 用工成本，实时计算
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private Boolean editable; // 是否允许编辑
 }

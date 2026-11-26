@@ -1,12 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import WorkspaceView from '../views/WorkspaceView.vue'
+import OrderListView from '../views/OrderListView.vue'
 import LoginView from '../views/LoginView.vue'
 import OrderCreateView from '../views/OrderCreateView.vue'
 import OrderDetailView from '../views/OrderDetailView.vue'
 import PurchaseCreateView from '../views/PurchaseCreateView.vue'
 import PurchaseDetailView from '../views/PurchaseDetailView.vue'
 import ModuleView from '../views/ModuleView.vue'
+import ProductionPlanView from '../views/ProductionPlanView.vue'
+import SampleView from '../views/SampleView.vue'
 import { crudConfigs } from '../config/crudConfigs'
 import { workspacePathForKey } from '../config/workspaceConfigs'
 import { isAuthenticated } from '../utils/auth'
@@ -19,13 +22,15 @@ const legacyRoutes = crudConfigs.map(config => ({
 const routes = [
   { path: '/login', name: 'login', component: LoginView, meta: { public: true, title: '登录' } },
   { path: '/', name: 'home', component: HomeView, meta: { title: '首页看板' } },
-  { path: '/orders', name: 'orders', component: WorkspaceView, props: { workspace: 'orders' }, meta: { title: '订单管理' } },
+  { path: '/orders', name: 'orders', component: OrderListView, meta: { title: '订单管理' } },
   { path: '/orders/new', name: 'order-create', component: OrderCreateView, meta: { title: '新增订单' } },
   { path: '/orders/:id', name: 'order-detail', component: OrderDetailView, meta: { title: '订单详情' } },
+  { path: '/orders/:id/edit', name: 'order-edit', component: OrderDetailView, props: { mode: 'edit' }, meta: { title: '编辑订单' } },
   { path: '/purchases', name: 'purchases', component: WorkspaceView, props: { workspace: 'purchases' }, meta: { title: '采购管理' } },
   { path: '/purchases/new', name: 'purchase-create', component: PurchaseCreateView, meta: { title: '新增采购订单' } },
   { path: '/purchases/:id', name: 'purchase-detail', component: PurchaseDetailView, meta: { title: '采购订单详情' } },
-  { path: '/production', name: 'production', component: WorkspaceView, props: { workspace: 'production' }, meta: { title: '生产管理' } },
+  { path: '/samples', name: 'samples', component: SampleView, meta: { title: '样衣管理' } },
+  { path: '/production', name: 'production', component: ProductionPlanView, meta: { title: '生产计划' } },
   { path: '/production/cutting', name: 'production-cutting', component: ModuleView, props: { workspace: 'production', configKey: 'cutting-tasks' }, meta: { title: '裁剪任务' } },
   { path: '/production/sewing', name: 'production-sewing', component: ModuleView, props: { workspace: 'production', configKey: 'sewing-tasks' }, meta: { title: '缝制任务' } },
   { path: '/production/trimming', name: 'production-trimming', component: ModuleView, props: { workspace: 'production', configKey: 'trimming-tasks' }, meta: { title: '剪线任务' } },

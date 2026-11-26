@@ -33,4 +33,38 @@
         item_no=#{itemNo} AND is_del=0
         <if test="excludeId != null">AND order_item_id != #{excludeId}</if>
     </select>
+    <update id="offsetItemNos">
+        UPDATE ct_gm.t_od_order_item SET item_no=item_no+10000 WHERE order_id=#{orderId} AND is_del=0
+    </update>
+    <update id="logicalDelete">
+        UPDATE ct_gm.t_od_order_item SET is_del=1,updated_at=NOW() WHERE order_item_id=#{itemId} AND is_del=0
+    </update>
+    <select id="selectMaterialCostByOrderId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(oi.qty * COALESCE(mc.cost, 0)), 0)
+        FROM ct_gm.t_od_order_item oi
+        LEFT JOIN (SELECT sm.style_id, SUM(sm.unit_consume * (1 + sm.loss_rate) * m.std_price) AS cost
+                   FROM ct_gm.t_sys_style_material sm
+                   JOIN ct_gm.t_sys_material m ON m.material_id=sm.material_id AND m.is_del=0
+                   WHERE sm.is_del=0 GROUP BY sm.style_id) mc ON mc.style_id=oi.style_id
+        WHERE oi.order_id=#{orderId} AND oi.is_del=0
+    </select>
+    <select id="selectLaborCostByOrderId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(oi.qty * COALESCE(pc.cost, 0)), 0)
+        FROM ct_gm.t_od_order_item oi
+        LEFT JOIN (SELECT sp.style_id, SUM(sp.piece_price * sp.difficulty_rate) AS cost
+                   FROM ct_gm.t_sys_style_process sp
+                   WHERE sp.is_del=0 AND sp.status=1 GROUP BY sp.style_id) pc ON pc.style_id=oi.style_id
+        WHERE oi.order_id=#{orderId} AND oi.is_del=0
+    </select>
+    <select id="selectMaterialCostByStyleId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(sm.unit_consume * (1 + sm.loss_rate) * m.std_price), 0)
+        FROM ct_gm.t_sys_style_material sm
+        JOIN ct_gm.t_sys_material m ON m.material_id=sm.material_id AND m.is_del=0
+        WHERE sm.style_id=#{styleId} AND sm.is_del=0
+    </select>
+    <select id="selectLaborCostByStyleId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(sp.piece_price * sp.difficulty_rate), 0)
+        FROM ct_gm.t_sys_style_process sp
+        WHERE sp.style_id=#{styleId} AND sp.is_del=0 AND sp.status=1
+    </select>
 </mapper>

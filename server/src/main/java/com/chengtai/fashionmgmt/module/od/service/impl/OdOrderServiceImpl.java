@@ -32,6 +32,11 @@ public class OdOrderServiceImpl extends AbstractBaseService<OdOrderMapper, OdOrd
     public boolean create(OdOrder request) {
         log.info("[OD_ORDER][CREATE][IN] class={} method={} request={}", "OdOrderServiceImpl", "create", logJson.toJson(request));
         request.setId(null);
+        request.setStatus(1);
+        request.setReviewResult(0);
+        request.setIsProducible(0);
+        request.setDepositAmount(java.math.BigDecimal.ZERO);
+        request.setCostAct(java.math.BigDecimal.ZERO);
         normalize(request);
         if (!StringUtils.hasText(request.getOrderNo())) {
             request.setOrderNo(codeGeneratorService.generate("ORDER").getPreviewCode());
@@ -53,9 +58,36 @@ public class OdOrderServiceImpl extends AbstractBaseService<OdOrderMapper, OdOrd
         log.info("[OD_ORDER][UPDATE][IN] class={} method={} orderId={} request={}", "OdOrderServiceImpl", "update", request.getId(), logJson.toJson(request));
         OdOrder existing = mapper.selectById(request.getId());
         if (existing == null) throw new BusinessValidationException("订单不存在");
+        if (!isEditableStatus(existing)) {
+            throw new BusinessValidationException("订单已开始生产或已关闭，不允许修改");
+        }
         String originalOrderNo = existing.getOrderNo();
+        Integer originalStatus = existing.getStatus();
+        Integer originalReviewResult = existing.getReviewResult();
+        Long originalReviewBy = existing.getReviewBy();
+        String originalReviewTime = existing.getReviewTime();
+        Integer originalCloseReasonType = existing.getCloseReasonType();
+        String originalCloseReason = existing.getCloseReason();
+        Long originalCloseBy = existing.getCloseBy();
+        String originalCloseTime = existing.getCloseTime();
+        Integer originalProducible = existing.getIsProducible();
+        String originalReleaseTime = existing.getReleaseTime();
+        java.math.BigDecimal originalDeposit = existing.getDepositAmount();
+        java.math.BigDecimal originalCostAct = existing.getCostAct();
         BusinessValueUtils.copyNonNullProperties(request, existing);
         existing.setOrderNo(originalOrderNo);
+        existing.setStatus(originalStatus);
+        existing.setReviewResult(originalReviewResult);
+        existing.setReviewBy(originalReviewBy);
+        existing.setReviewTime(originalReviewTime);
+        existing.setCloseReasonType(originalCloseReasonType);
+        existing.setCloseReason(originalCloseReason);
+        existing.setCloseBy(originalCloseBy);
+        existing.setCloseTime(originalCloseTime);
+        existing.setIsProducible(originalProducible);
+        existing.setReleaseTime(originalReleaseTime);
+        existing.setDepositAmount(originalDeposit);
+        existing.setCostAct(originalCostAct);
         normalize(existing);
         validate(existing, false);
         if (mapper.countByOrderNo(existing.getOrderNo(), existing.getId()) > 0) {
@@ -65,6 +97,16 @@ public class OdOrderServiceImpl extends AbstractBaseService<OdOrderMapper, OdOrd
         log.info("[OD_ORDER][UPDATE][OUT] class={} method={} affected={} orderId={} orderNo={} response={}",
                 "OdOrderServiceImpl", "update", affected, existing.getId(), existing.getOrderNo(), logJson.toJson(existing));
         return affected == 1;
+    }
+
+    /** 判断通用接口是否允许修改该订单。 */
+    private boolean isEditableStatus(OdOrder order) {
+        if (Integer.valueOf(1).equals(order.getStatus()) || Integer.valueOf(2).equals(order.getStatus())) return true;
+        if (Integer.valueOf(7).equals(order.getStatus())) {
+            Integer previous = mapper.selectPreviousStatus(order.getId());
+            return previous == null || Integer.valueOf(1).equals(previous) || Integer.valueOf(2).equals(previous);
+        }
+        return false;
     }
 
     /** 填充默认值并重新计算当前模块的业务金额和汇总字段。 */
