@@ -71,7 +71,7 @@
         <el-table-column prop="delayDays" label="逾期天数" width="95" />
         <el-table-column label="操作" fixed="right" width="120" align="center">
           <template #default="{ row }">
-            <el-button v-if="row.status === 1 || row.status === 2" link type="danger" @click="openClose(row)">关闭订单</el-button>
+            <el-button v-if="row.status !== 5 && row.status !== 8" link type="danger" @click="openClose(row)">关闭订单</el-button>
             <span v-else>—</span>
           </template>
         </el-table-column>
@@ -107,7 +107,7 @@ const staffOptions = ref([])
 const deptOptions = ref([])
 const filters = reactive({ keyword: '', unitId: null, salesmanId: null, status: null, deptId: null, deliveryStart: '', deliveryEnd: '' })
 const orderTypeOptions = [{ label: '内销订单', value: 1 }, { label: '加工单', value: 2 }, { label: '返单', value: 3 }]
-const statusOptions = [{ label: '初始', value: 1 }, { label: '待样衣/待排产', value: 2 }, { label: '生产中', value: 3 }, { label: '部分交付', value: 4 }, { label: '已完成', value: 5 }, { label: '延期', value: 6 }, { label: '暂停', value: 7 }, { label: '关闭', value: 8 }]
+const statusOptions = [{ label: '初始', value: 1 }, { label: '已审核', value: 2 }, { label: '生产中', value: 3 }, { label: '部分交付', value: 4 }, { label: '已完成', value: 5 }, { label: '延期', value: 6 }, { label: '暂停', value: 7 }, { label: '已关闭', value: 8 }, { label: '待复议', value: 9 }, { label: '样衣生成中', value: 10 }, { label: '待生产', value: 11 }]
 const reviewOptions = [{ label: '未评审', value: 0 }, { label: '可做', value: 1 }, { label: '不可做', value: 2 }]
 const closeTypeOptions = [{ label: '预计成本高于订单价值', value: 1 }, { label: '交期无法满足', value: 2 }, { label: '客户取消', value: 3 }, { label: '其他', value: 4 }]
 const closeVisible = ref(false)
@@ -152,7 +152,7 @@ function percent(value) { return (Number(value || 0) * 100).toFixed(2) + '%' }
 // 返回毛利显示颜色。
 function profitClass(value) { return Number(value || 0) < 0 ? 'profit-loss' : Number(value || 0) === 0 ? 'profit-even' : 'profit-good' }
 // 返回订单状态标签颜色。
-function statusType(status) { return ({ 1: 'info', 2: 'warning', 3: 'primary', 4: 'warning', 5: 'success', 6: 'danger', 7: 'warning', 8: 'danger' })[status] || 'info' }
+function statusType(status) { return ({ 1: 'info', 2: 'warning', 3: 'primary', 4: 'warning', 5: 'success', 6: 'danger', 7: 'warning', 8: 'danger', 9: 'warning', 10: 'primary', 11: 'warning' })[status] || 'info' }
 // 打开订单关闭弹框。
 function openClose(row) { closingRow.value = row; closeForm.closeReasonType = 3; closeForm.closeReason = ''; closeVisible.value = true }
 // 提交订单关闭申请并刷新列表。

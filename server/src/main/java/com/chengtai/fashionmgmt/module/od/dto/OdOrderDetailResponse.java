@@ -19,4 +19,6 @@ public class OdOrderDetailResponse {
     private List<FinPlan> plans;
     private OdOrderMetrics metrics;
     private List<OdOrderProgressNode> progress;
+    private List<com.chengtai.fashionmgmt.module.sm.entity.SmSample> samples;
+    private List<com.chengtai.fashionmgmt.module.pl.entity.PlProdPlan> productionPlans;
 }

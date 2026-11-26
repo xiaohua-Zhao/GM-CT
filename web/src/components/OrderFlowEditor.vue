@@ -10,7 +10,9 @@
         <el-button @click="router.push('/orders')">返回订单列表</el-button>
         <el-button v-if="mode === 'detail' && form.editable" type="primary" @click="router.push('/orders/' + orderId + '/edit')">编辑订单</el-button>
         <el-button v-if="formEditable && mode !== 'detail'" type="primary" :loading="saving" @click="save">保存草稿</el-button>
-        <el-button v-if="canReview" type="warning" @click="openReview">提交评审</el-button>
+        <el-button v-if="canAudit" type="warning" @click="openAudit">{{ form.status === 9 ? '重新审核' : '订单审核' }}</el-button>
+        <el-button v-if="canMakeSamples" type="primary" @click="openCreateSamples">制作样衣</el-button>
+        <el-button v-if="canCreatePlan" type="primary" @click="openPlanManage">操作生产计划</el-button>
         <el-button v-if="canPause" @click="pause">暂停</el-button>
         <el-button v-if="canResume" type="success" @click="resume">恢复</el-button>
         <el-button v-if="canClose" type="danger" plain @click="openClose">关闭订单</el-button>
@@ -24,6 +26,8 @@
       </el-steps>
     </section>
 
+    <el-tabs v-model="activeTab" class="order-tabs">
+      <el-tab-pane label="订单信息" name="order">
     <el-form ref="formRef" :model="form" label-position="left" label-width="112px" :disabled="!formEditable">
       <section class="content-panel detail-section">
         <div class="detail-section-title"><span>01</span><div><strong>订单基础信息</strong><small>客户、业务归属和交期信息</small></div></div>
@@ -124,17 +128,73 @@
         </el-table>
       </section>
     </el-form>
+      </el-tab-pane>
+      <el-tab-pane label="样衣记录" name="samples">
+        <section class="content-panel detail-section">
+          <div class="detail-section-title"><span>05</span><div><strong>样衣记录</strong><small>样衣确认通过后自动放行订单</small></div></div>
+          <el-table :data="samples" border stripe empty-text="暂无样衣记录">
+            <el-table-column prop="sampleNo" label="样衣编号" width="155" />
+            <el-table-column label="款式" min-width="180"><template #default="{ row }">{{ styleText(row.styleId) }}</template></el-table-column>
+            <el-table-column prop="roundNo" label="轮次" width="75" />
+            <el-table-column label="状态" width="120"><template #default="{ row }"><el-tag :type="sampleStatusType(row.status)">{{ sampleStatusText(row.status) }}</el-tag></template></el-table-column>
+            <el-table-column label="确认结果" width="100"><template #default="{ row }">{{ sampleConfirmText(row.confirmResult) }}</template></el-table-column>
+            <el-table-column prop="sendDate" label="寄出日期" width="115" />
+            <el-table-column prop="confirmDate" label="确认日期" width="115" />
+            <el-table-column label="操作" width="140"><template #default="{ row }"><el-button v-if="row.status === 2 || row.status === 3" link type="success" @click="openSampleConfirm(row)">客户确认</el-button><el-button link @click="goSamples">查看全部</el-button></template></el-table-column>
+          </el-table>
+        </section>
+      </el-tab-pane>
+    </el-tabs>
 
-    <el-dialog v-model="reviewVisible" title="提交可做性评审" width="560px" destroy-on-close>
-      <el-alert :title="viableNow ? '当前毛利满足可做条件' : '当前毛利不满足可做条件'" :type="viableNow ? 'success' : 'error'" :description="viabilityText" show-icon :closable="false" style="margin-bottom:16px" />
+    <el-dialog v-model="auditVisible" title="订单审核" width="540px" destroy-on-close>
       <el-form label-width="100px">
-        <el-form-item label="评审结论"><el-radio-group v-model="reviewForm.reviewResult"><el-radio :value="1">可做</el-radio><el-radio :value="2">不可做</el-radio></el-radio-group></el-form-item>
-        <template v-if="reviewForm.reviewResult === 2">
-          <el-form-item label="关闭原因"><el-select v-model="reviewForm.closeReasonType" style="width:100%"><el-option v-for="item in closeTypeOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
-          <el-form-item label="原因说明"><el-input v-model="reviewForm.closeReason" type="textarea" :rows="4" maxlength="200" show-word-limit /></el-form-item>
-        </template>
+        <el-form-item label="审核结果"><el-radio-group v-model="auditForm.auditResult"><el-radio value="pass">通过</el-radio><el-radio value="reject">不通过，待复议</el-radio></el-radio-group></el-form-item>
+        <el-form-item label="审核备注"><el-input v-model="auditForm.auditRemark" type="textarea" :rows="4" maxlength="200" show-word-limit /></el-form-item>
       </el-form>
-      <template #footer><el-button @click="reviewVisible=false">取消</el-button><el-button type="primary" :loading="saving" @click="doReview">确认提交</el-button></template>
+      <template #footer><el-button @click="auditVisible=false">取消</el-button><el-button type="primary" :loading="saving" @click="submitAudit">确认审核</el-button></template>
+    </el-dialog>
+
+    <el-dialog v-model="createSamplesVisible" title="制作样衣" width="760px" destroy-on-close>
+      <el-alert title="请选择需要制作样衣的订单明细，系统按款式生成样衣记录" type="info" show-icon :closable="false" style="margin-bottom:14px" />
+      <el-checkbox-group v-model="selectedItemIds">
+        <el-table :data="items" border stripe>
+          <el-table-column width="55"><template #default="{ row }"><el-checkbox :value="row.id" /></template></el-table-column>
+          <el-table-column prop="itemNo" label="行号" width="70" />
+          <el-table-column label="款式" min-width="180"><template #default="{ row }">{{ styleText(row.styleId) }}</template></el-table-column>
+          <el-table-column prop="color" label="颜色" width="100" />
+          <el-table-column prop="size" label="尺码" width="80" />
+          <el-table-column prop="qty" label="订单数量" width="100" />
+        </el-table>
+      </el-checkbox-group>
+      <template #footer><el-button @click="createSamplesVisible=false">取消</el-button><el-button type="primary" :loading="saving" @click="submitCreateSamples">生成样衣</el-button></template>
+    </el-dialog>
+
+    <el-dialog v-model="sampleConfirmVisible" title="样衣客户确认" width="520px" destroy-on-close>
+      <el-form label-width="100px">
+        <el-form-item label="确认结果"><el-radio-group v-model="sampleConfirmForm.confirmResult"><el-radio :value="1">通过</el-radio><el-radio :value="2">不通过</el-radio></el-radio-group></el-form-item>
+        <el-form-item label="确认日期"><el-date-picker v-model="sampleConfirmForm.confirmDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item>
+        <el-form-item label="客户意见"><el-input v-model="sampleConfirmForm.remark" type="textarea" :rows="3" maxlength="200" show-word-limit /></el-form-item>
+      </el-form>
+      <template #footer><el-button @click="sampleConfirmVisible=false">取消</el-button><el-button type="primary" :loading="saving" @click="submitSampleConfirm">确认</el-button></template>
+    </el-dialog>
+
+    <el-dialog v-model="planManageVisible" title="生产计划" width="860px" destroy-on-close>
+      <div class="detail-section-heading"><div><strong>订单生产计划</strong><small>计划下达后订单进入生产中</small></div><el-button type="primary" plain @click="openPlanCreate">新增生产计划</el-button></div>
+      <el-table :data="productionPlans" border stripe empty-text="暂无生产计划">
+        <el-table-column prop="prodPlanNo" label="计划单号" width="160" />
+        <el-table-column prop="prodQty" label="计划数量" width="110" />
+        <el-table-column prop="startDate" label="开工日期" width="120" />
+        <el-table-column prop="endDate" label="完工日期" width="120" />
+        <el-table-column label="状态" width="110"><template #default="{ row }">{{ prodPlanStatusText(row.status) }}</template></el-table-column>
+      </el-table>
+    </el-dialog>
+
+    <el-dialog v-model="planFormVisible" title="新增生产计划" width="540px" destroy-on-close>
+      <el-form label-width="100px">
+        <el-form-item label="工序" required><el-select v-model="planForm.processId" filterable style="width:100%"><el-option v-for="item in processOptions" :key="item.id" :label="item.processCode + ' ' + item.processName" :value="item.id" /></el-select></el-form-item>
+        <el-form-item label="计划数量" required><el-input v-model="planForm.planQty" inputmode="decimal" /></el-form-item>
+      </el-form>
+      <template #footer><el-button @click="planFormVisible=false">取消</el-button><el-button type="primary" :loading="saving" @click="submitPlan">保存计划</el-button></template>
     </el-dialog>
 
     <el-dialog v-model="closeVisible" title="关闭订单" width="540px" destroy-on-close>
@@ -151,7 +211,8 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { closeOrderFlow, createOrderFlow, getOrderFlow, pauseOrderFlow, previewOrderCost, resumeOrderFlow, reviewOrderFlow, updateOrderFlow } from '../api/orderDetail'
+import { auditOrder, closeOrderFlow, createOrderFlow, createOrderProductionPlan, createOrderSamples, getOrderFlow, pauseOrderFlow, previewOrderCost, resumeOrderFlow, reviewOrderFlow, updateOrderFlow } from '../api/orderDetail'
+import { confirmSample } from '../api/samples'
 import { loadLookupData } from '../api/lookups'
 
 const props = defineProps({
@@ -164,11 +225,25 @@ const saving = ref(false)
 const items = ref([])
 const plans = ref([])
 const progress = ref([])
+const samples = ref([])
+const productionPlans = ref([])
+const activeTab = ref('order')
+const auditVisible = ref(false)
+const createSamplesVisible = ref(false)
+const sampleConfirmVisible = ref(false)
+const planManageVisible = ref(false)
+const planFormVisible = ref(false)
+const selectedItemIds = ref([])
+const activeSample = ref(null)
+const auditForm = reactive({ auditResult: 'pass', auditRemark: '' })
+const sampleConfirmForm = reactive({ confirmResult: 1, confirmDate: '', remark: '' })
+const planForm = reactive({ processId: null, planQty: 0 })
 const metrics = ref({ viable: false, grossProfit: 0, grossMarginRate: 0, costCompareBase: 0, minGrossMargin: 0 })
 const unitOptions = ref([])
 const staffOptions = ref([])
 const deptOptions = ref([])
 const styleOptions = ref([])
+const processOptions = ref([])
 const commonOptions = ref([])
 const reviewVisible = ref(false)
 const closeVisible = ref(false)
@@ -178,7 +253,7 @@ const form = reactive({})
 let keySeed = 1
 
 const orderTypeOptions = [{ label: '内销订单', value: 1 }, { label: '加工单', value: 2 }, { label: '返单', value: 3 }]
-const statusOptions = [{ label: '初始', value: 1 }, { label: '待样衣/待排产', value: 2 }, { label: '生产中', value: 3 }, { label: '部分交付', value: 4 }, { label: '已完成', value: 5 }, { label: '延期', value: 6 }, { label: '暂停', value: 7 }, { label: '关闭', value: 8 }]
+const statusOptions = [{ label: '初始', value: 1 }, { label: '已审核', value: 2 }, { label: '生产中', value: 3 }, { label: '部分交付', value: 4 }, { label: '已完成', value: 5 }, { label: '延期', value: 6 }, { label: '暂停', value: 7 }, { label: '已关闭', value: 8 }, { label: '待复议', value: 9 }, { label: '样衣生成中', value: 10 }, { label: '待生产', value: 11 }]
 const reviewOptions = [{ label: '未评审', value: 0 }, { label: '可做', value: 1 }, { label: '不可做', value: 2 }]
 const closeTypeOptions = [{ label: '预计成本高于订单价值', value: 1 }, { label: '交期无法满足', value: 2 }, { label: '客户取消', value: 3 }, { label: '其他', value: 4 }]
 const nodeTypeOptions = [{ label: '定金', value: 1 }, { label: '进度款', value: 2 }, { label: '尾款', value: 3 }, { label: '全额', value: 4 }]
@@ -188,9 +263,12 @@ const isCreate = computed(() => props.mode === 'create')
 const pageTitle = computed(() => isCreate.value ? '新增订单' : props.mode === 'edit' ? '编辑订单' : '订单详情')
 const formEditable = computed(() => isCreate.value || (props.mode === 'edit' && form.editable === true))
 const canReview = computed(() => !isCreate.value && form.status === 1)
-const canPause = computed(() => !isCreate.value && [2, 3, 4].includes(form.status))
+const canAudit = computed(() => !isCreate.value && [1, 9].includes(form.status))
+const canMakeSamples = computed(() => !isCreate.value && form.status === 2)
+const canCreatePlan = computed(() => !isCreate.value && form.status === 11)
+const canPause = computed(() => !isCreate.value && [2, 3, 4, 10, 11].includes(form.status))
 const canResume = computed(() => !isCreate.value && form.status === 7)
-const canClose = computed(() => !isCreate.value && [1, 2].includes(form.status))
+const canClose = computed(() => !isCreate.value && ![5, 8].includes(form.status))
 const taxRatePercent = computed({
   get: () => Number(((form.taxRate ?? 0.13) * 100).toFixed(2)),
   set: value => { form.taxRate = Number(value || 0) / 100; recalcTotals() }
@@ -261,8 +339,8 @@ function recalcTotals() {
 }
 // 并行加载客户、部门、业务员、款式和颜色尺码字典。
 async function loadOptions() {
-  const [units, staffs, depts, styles, commons] = await Promise.all([loadLookupData('units'), loadLookupData('staffs'), loadLookupData('depts'), loadLookupData('styles'), loadLookupData('commons')])
-  unitOptions.value = units; staffOptions.value = staffs; deptOptions.value = depts; styleOptions.value = styles; commonOptions.value = commons
+  const [units, staffs, depts, styles, processes, commons] = await Promise.all([loadLookupData('units'), loadLookupData('staffs'), loadLookupData('depts'), loadLookupData('styles'), loadLookupData('processes'), loadLookupData('commons')])
+  unitOptions.value = units; staffOptions.value = staffs; deptOptions.value = depts; styleOptions.value = styles; processOptions.value = processes; commonOptions.value = commons
 }
 // 加载订单聚合详情。
 async function loadDetail() {
@@ -274,6 +352,8 @@ async function loadDetail() {
   Object.assign(form, data.order || {})
   items.value = (data.items || []).map((item, index) => ({ ...item, _key: item.id ? 'saved-' + item.id : 'new-' + keySeed++ }))
   plans.value = data.plans || []
+  samples.value = data.samples || []
+  productionPlans.value = data.productionPlans || []
   metrics.value = data.metrics || metrics.value
   progress.value = data.progress || []
   renumberItems()
@@ -296,6 +376,24 @@ async function save() {
   } catch (error) { ElMessage.error(error?.response?.data?.message || error.message || '保存订单失败') }
   finally { saving.value = false }
 }
+// 打开订单审核对话框。
+function openAudit() { auditForm.auditResult = 'pass'; auditForm.auditRemark = ''; auditVisible.value = true }
+// 提交订单审核。
+async function submitAudit() { saving.value = true; try { const r = await auditOrder(orderId, auditForm); if (r.data?.code !== 0) throw new Error(r.data?.message || '审核失败'); ElMessage.success('订单审核完成'); auditVisible.value = false; await loadDetail() } catch (error) { ElMessage.error(error?.response?.data?.message || error.message || '审核失败') } finally { saving.value = false } }
+// 打开制作样衣对话框。
+function openCreateSamples() { selectedItemIds.value = []; createSamplesVisible.value = true }
+// 按勾选明细生成样衣。
+async function submitCreateSamples() { if (!selectedItemIds.value.length) return ElMessage.warning('请至少选择一条订单明细'); saving.value = true; try { const r = await createOrderSamples(orderId, { selectedItemIds: selectedItemIds.value }); if (r.data?.code !== 0) throw new Error(r.data?.message || '生成样衣失败'); ElMessage.success('样衣生成成功'); createSamplesVisible.value = false; activeTab.value = 'samples'; await loadDetail() } catch (error) { ElMessage.error(error?.response?.data?.message || error.message || '生成样衣失败') } finally { saving.value = false } }
+// 打开样衣客户确认。
+function openSampleConfirm(row) { activeSample.value = row; sampleConfirmForm.confirmResult = 1; sampleConfirmForm.confirmDate = today(); sampleConfirmForm.remark = ''; sampleConfirmVisible.value = true }
+// 提交样衣客户确认。
+async function submitSampleConfirm() { saving.value = true; try { const r = await confirmSample(activeSample.value.id, sampleConfirmForm); if (r.data?.code !== 0) throw new Error(r.data?.message || '确认失败'); ElMessage.success('样衣确认已提交'); sampleConfirmVisible.value = false; await loadDetail(); activeTab.value = 'samples' } catch (error) { ElMessage.error(error?.response?.data?.message || error.message || '确认失败') } finally { saving.value = false } }
+// 打开生产计划管理。
+function openPlanManage() { planManageVisible.value = true }
+// 打开新增生产计划表单。
+function openPlanCreate() { planForm.processId = null; planForm.planQty = Number(form.qtyTotal || 0); planFormVisible.value = true }
+// 创建生产计划并推进订单状态。
+async function submitPlan() { if (!planForm.processId) return ElMessage.warning('请选择工序'); saving.value = true; try { const r = await createOrderProductionPlan(orderId, { processId: planForm.processId, planQty: Number(planForm.planQty || 0) }); if (r.data?.code !== 0) throw new Error(r.data?.message || '创建生产计划失败'); ElMessage.success('生产计划创建成功'); planFormVisible.value = false; planManageVisible.value = false; await loadDetail() } catch (error) { ElMessage.error(error?.response?.data?.message || error.message || '创建生产计划失败') } finally { saving.value = false } }
 // 打开可做性评审对话框。
 function openReview() { reviewForm.reviewResult = 1; reviewForm.closeReasonType = 1; reviewForm.closeReason = ''; reviewVisible.value = true }
 // 提交评审结论。
@@ -343,6 +441,16 @@ function reviewType(result) { return result === 1 ? 'success' : result === 2 ? '
 function styleText(styleId) { const style = styleOptions.value.find(item => Number(item.id) === Number(styleId)); return style ? style.styleCode + ' ' + style.styleName : '—' }
 // 返回进度节点说明。
 function progressText(state) { return ({ done: '已完成', current: '进行中', pending: '待处理', closed: '已关闭' })[state] || '' }
+// 返回样衣状态颜色。
+function sampleStatusType(status) { return ({ 1: 'primary', 2: 'warning', 3: 'warning', 4: 'success', 5: 'danger', 6: 'info' })[status] || 'info' }
+// 返回样衣状态文本。
+function sampleStatusText(status) { return ({ 1: '制作中', 2: '已寄出', 3: '客户确认中', 4: '客户已确认', 5: '客户不通过', 6: '作废' })[status] || '—' }
+// 返回样衣确认结果文本。
+function sampleConfirmText(result) { return ({ 0: '待确认', 1: '通过', 2: '不通过' })[result] || '—' }
+// 返回生产计划状态文本。
+function prodPlanStatusText(status) { return ({ 1: '待下达', 2: '已下达', 3: '生产中', 4: '已完工', 5: '暂停', 6: '取消' })[status] || '—' }
+// 跳转到样衣管理页面。
+function goSamples() { router.push('/samples') }
 
 onMounted(async () => {
   loading.value = true

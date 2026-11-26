@@ -25,7 +25,20 @@ import com.chengtai.fashionmgmt.module.od.mapper.OdOrderMapper;
 import com.chengtai.fashionmgmt.module.od.service.OdOrderFlowService;
 import com.chengtai.fashionmgmt.module.sys.entity.SysCommon;
 import com.chengtai.fashionmgmt.module.sys.mapper.SysCommonMapper;
+import com.chengtai.fashionmgmt.module.sm.entity.SmSample;
+import com.chengtai.fashionmgmt.module.sm.mapper.SmSampleMapper;
+import com.chengtai.fashionmgmt.module.pl.entity.PlProdPlan;
+import com.chengtai.fashionmgmt.module.pl.entity.PlTask;
+import com.chengtai.fashionmgmt.module.pl.mapper.PlProdPlanMapper;
+import com.chengtai.fashionmgmt.module.pl.mapper.PlTaskMapper;
+import com.chengtai.fashionmgmt.module.sys.entity.SysProcess;
+import com.chengtai.fashionmgmt.module.sys.mapper.SysProcessMapper;
 import com.chengtai.fashionmgmt.module.sys.service.CodeGeneratorService;
+import com.chengtai.fashionmgmt.module.od.dto.OdOrderAuditRequest;
+import com.chengtai.fashionmgmt.module.od.dto.OrderCreateSamplesRequest;
+import com.chengtai.fashionmgmt.module.od.dto.OrderCreateProductionPlanRequest;
+
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -58,6 +71,9 @@ public class OdOrderFlowServiceImpl implements OdOrderFlowService {
     private static final int STATUS_DELAYED = 6;
     private static final int STATUS_PAUSED = 7;
     private static final int STATUS_CLOSED = 8;
+    private static final int STATUS_REAUDIT = 9;
+    private static final int STATUS_SAMPLE_GENERATING = 10;
+    private static final int STATUS_WAIT_PRODUCING = 11;
 
     private final OdOrderMapper orderMapper;
     private final OdOrderItemMapper itemMapper;
@@ -66,6 +82,10 @@ public class OdOrderFlowServiceImpl implements OdOrderFlowService {
     private final CtStaffMapper staffMapper;
     private final CodeGeneratorService codeGeneratorService;
     private final BusinessLogJson logJson;
+    private final SmSampleMapper sampleMapper;
+    private final PlProdPlanMapper prodPlanMapper;
+    private final PlTaskMapper taskMapper;
+    private final SysProcessMapper processMapper;
 
     /** 分页查询订单，并补充毛利额和毛利率。 */
     @Override
@@ -108,7 +128,11 @@ public class OdOrderFlowServiceImpl implements OdOrderFlowService {
         order.setGrossProfit(metrics.getGrossProfit());
         order.setGrossMarginRate(metrics.getGrossMarginRate());
         order.setEditable(isOrderEditable(order));
-        return new OdOrderDetailResponse(order, items, plans, metrics, buildProgress(order));
+        List<SmSample> samples = sampleMapper.selectList(new QueryWrapper<SmSample>()
+                .eq("order_id", orderId).eq("is_del", 0).orderByAsc("created_at"));
+        List<PlProdPlan> productionPlans = prodPlanMapper.selectList(new QueryWrapper<PlProdPlan>()
+                .eq("order_id", orderId).eq("is_del", 0).orderByDesc("created_at"));
+        return new OdOrderDetailResponse(order, items, plans, metrics, buildProgress(order), samples, productionPlans);
     }
 
     /** 按明细款式和数量预览 BOM 物料成本及工序用工成本。 */
@@ -116,6 +140,117 @@ public class OdOrderFlowServiceImpl implements OdOrderFlowService {
     public OdOrderCostPreview previewCost(List<OdOrderItem> items) {
         CostBreakdown cost = calculatePreviewCost(items);
         return new OdOrderCostPreview(cost.material(), cost.labor(), cost.total());
+    }
+
+    /** 审核订单：通过进入已审核，不通过进入待复议。 */
+    @Override
+    @Transactional
+    public OdOrder audit(Long orderId, OdOrderAuditRequest request) {
+        OdOrder order = requireOrder(orderId);
+        if (!Objects.equals(order.getStatus(), STATUS_INITIAL) && !Objects.equals(order.getStatus(), STATUS_REAUDIT)) {
+            throw new BusinessValidationException("只有初始或待复议状态订单可以审核");
+        }
+        boolean pass = "pass".equalsIgnoreCase(request.getAuditResult());
+        boolean reject = "reject".equalsIgnoreCase(request.getAuditResult());
+        if (!pass && !reject) throw new BusinessValidationException("审核结果只能为 pass 或 reject");
+        String now = LocalDateTime.now().format(DATE_TIME_FORMATTER);
+        Long userId = currentUserId();
+        if (pass) {
+            orderMapper.updateAuditPassed(orderId, userId, now, request.getAuditRemark());
+            orderMapper.insertStatusLog(orderId, order.getDeptId(), order.getStatus(), STATUS_WAIT_SAMPLE, userId, "订单审核通过");
+        } else {
+            orderMapper.updateAuditRejected(orderId, userId, now, request.getAuditRemark());
+            orderMapper.insertStatusLog(orderId, order.getDeptId(), order.getStatus(), STATUS_REAUDIT, userId, "订单审核不通过，待复议");
+        }
+        return requireOrder(orderId);
+    }
+
+    /** 从勾选的订单明细批量生成样衣，并将订单推进到样衣生成中。 */
+    @Override
+    @Transactional
+    public List<SmSample> createSamples(Long orderId, OrderCreateSamplesRequest request) {
+        OdOrder order = requireOrder(orderId);
+        if (!Objects.equals(order.getStatus(), STATUS_WAIT_SAMPLE)) {
+            throw new BusinessValidationException("只有已审核订单可以生成样衣");
+        }
+        List<Long> ids = request == null ? null : request.getSelectedItemIds();
+        if (ids == null || ids.isEmpty()) throw new BusinessValidationException("请至少选择一条订单明细");
+        List<OdOrderItem> selected = itemMapper.selectList(new QueryWrapper<OdOrderItem>()
+                .eq("order_id", orderId).in("order_item_id", ids).eq("is_del", 0));
+        if (selected.size() != ids.size()) throw new BusinessValidationException("部分订单明细不存在或不属于当前订单");
+        for (OdOrderItem item : selected) {
+            SmSample sample = new SmSample();
+            sample.setDeptId(order.getDeptId());
+            sample.setSampleNo(codeGeneratorService.generate("SAMPLE").getPreviewCode());
+            sample.setOrderId(orderId);
+            sample.setStyleId(item.getStyleId());
+            sample.setSampleType(1);
+            sample.setRoundNo(1);
+            sample.setQty(1);
+            sample.setConfirmResult(0);
+            sample.setStatus(1);
+            sampleMapper.insert(sample);
+        }
+        Long userId = currentUserId();
+        orderMapper.updateStatus(orderId, STATUS_SAMPLE_GENERATING);
+        orderMapper.insertStatusLog(orderId, order.getDeptId(), STATUS_WAIT_SAMPLE, STATUS_SAMPLE_GENERATING, userId, "已生成样衣 " + selected.size() + " 件");
+        return sampleMapper.selectList(new QueryWrapper<SmSample>().eq("order_id", orderId).eq("is_del", 0).orderByAsc("created_at"));
+    }
+
+    /** 为待生产订单创建生产计划及对应工序任务。 */
+    @Override
+    @Transactional
+    public PlProdPlan createProductionPlan(Long orderId, OrderCreateProductionPlanRequest request) {
+        OdOrder order = requireOrder(orderId);
+        if (!Objects.equals(order.getStatus(), STATUS_WAIT_PRODUCING)) {
+            throw new BusinessValidationException("只有待生产订单可以创建生产计划");
+        }
+        if (prodPlanMapper.countByOrderId(orderId, null) > 0) throw new BusinessValidationException("该订单已经存在生产计划");
+        SysProcess process = processMapper.selectById(request.getProcessId());
+        if (process == null) throw new BusinessValidationException("工序不存在");
+        int stage = process.getProcessType() == null ? 0 : process.getProcessType();
+        if (stage < 1 || stage > 5) throw new BusinessValidationException("生产计划只能选择裁剪、缝制、剪线、整烫或包装工序");
+        BigDecimal planQty = request.getPlanQty() == null ? order.getQtyTotal() : request.getPlanQty();
+        if (planQty == null || planQty.signum() < 0) throw new BusinessValidationException("计划数量不能小于0");
+        String today = LocalDate.now().toString();
+        String start = StringUtils.hasText(order.getStartDate()) ? order.getStartDate() : today;
+        String end = order.getDeliveryDatePlan();
+        Long userId = currentUserId();
+        String now = LocalDateTime.now().format(DATE_TIME_FORMATTER);
+        PlProdPlan plan = new PlProdPlan();
+        plan.setDeptId(order.getDeptId());
+        plan.setProdPlanNo(codeGeneratorService.generate("PROD_PLAN").getPreviewCode());
+        plan.setOrderId(orderId);
+        plan.setProdQty(planQty);
+        plan.setStartDate(start);
+        plan.setEndDate(end);
+        plan.setStatus(2);
+        plan.setPlannerId(userId);
+        plan.setReleaseBy(userId);
+        plan.setReleaseTime(now);
+        plan.setRemark("由订单 " + order.getOrderNo() + " 创建");
+        prodPlanMapper.insertBusiness(plan, userId);
+        PlTask task = new PlTask();
+        task.setProdPlanId(plan.getId());
+        task.setTaskNo(codeGeneratorService.generate("PROD_TASK").getPreviewCode());
+        task.setSeqNo(1);
+        task.setProcessStage(stage);
+        task.setDeptId(order.getDeptId());
+        task.setStatus(1);
+        task.setQtyPlan(planQty);
+        task.setQtyDone(BigDecimal.ZERO);
+        task.setStartDatePlan(start);
+        task.setEndDatePlan(end);
+        task.setQcNeed(1);
+        task.setQcStatus(0);
+        task.setQcType(2);
+        task.setQcQtyCheck(BigDecimal.ZERO);
+        task.setQcQtyPass(BigDecimal.ZERO);
+        task.setQcQtyReject(BigDecimal.ZERO);
+        taskMapper.insertBusiness(task, userId);
+        orderMapper.updateStatus(orderId, STATUS_PRODUCING);
+        orderMapper.insertStatusLog(orderId, order.getDeptId(), STATUS_WAIT_PRODUCING, STATUS_PRODUCING, userId, "生产计划已创建：" + plan.getProdPlanNo());
+        return plan;
     }
 
     /** 事务保存订单头及明细，自动重算汇总、毛利和行号。 */
@@ -253,7 +388,7 @@ public class OdOrderFlowServiceImpl implements OdOrderFlowService {
     @Transactional
     public OdOrder pause(Long orderId) {
         OdOrder order = requireOrder(orderId);
-        if (!List.of(STATUS_WAIT_SAMPLE, STATUS_PRODUCING, STATUS_PART_DELIVERED).contains(order.getStatus())) {
+        if (!List.of(STATUS_WAIT_SAMPLE, STATUS_PRODUCING, STATUS_PART_DELIVERED, STATUS_SAMPLE_GENERATING, STATUS_WAIT_PRODUCING).contains(order.getStatus())) {
             throw new BusinessValidationException("当前状态不允许暂停");
         }
         Long userId = currentUserId();
@@ -283,11 +418,8 @@ public class OdOrderFlowServiceImpl implements OdOrderFlowService {
     @Transactional
     public OdOrder close(Long orderId, OdOrderCloseRequest request) {
         OdOrder order = requireOrder(orderId);
-        if (!List.of(STATUS_INITIAL, STATUS_WAIT_SAMPLE).contains(order.getStatus())) {
-            throw new BusinessValidationException("已投产或已关闭订单不能关闭");
-        }
-        if (orderMapper.countActiveProductionPlans(orderId) > 0) {
-            throw new BusinessValidationException("订单已下生产计划，不能关闭");
+        if (Objects.equals(order.getStatus(), STATUS_DONE) || Objects.equals(order.getStatus(), STATUS_CLOSED)) {
+            throw new BusinessValidationException("已完成或已关闭订单不能关闭");
         }
         CloseReason reason = normalizeCloseReason(request.getCloseReasonType(), request.getCloseReason(), calculateMetrics(order), false);
         Long userId = currentUserId();
@@ -307,6 +439,9 @@ public class OdOrderFlowServiceImpl implements OdOrderFlowService {
         if (!Integer.valueOf(1).equals(order.getIsProducible())) {
             throw new BusinessValidationException("样衣尚未确认，订单未放行，不能排产");
         }
+        if (!Objects.equals(order.getStatus(), STATUS_WAIT_PRODUCING)) {
+            throw new BusinessValidationException("只有待生产状态订单可以创建生产计划");
+        }
     }
 
     /** 校验订单可编辑状态。 */
@@ -318,12 +453,12 @@ public class OdOrderFlowServiceImpl implements OdOrderFlowService {
 
     /** 判断订单是否处于生产开始前，可编辑初始、待样衣/待排产及生产前暂停状态。 */
     private boolean isOrderEditable(OdOrder order) {
-        if (Objects.equals(order.getStatus(), STATUS_INITIAL) || Objects.equals(order.getStatus(), STATUS_WAIT_SAMPLE)) {
+        if (List.of(STATUS_INITIAL, STATUS_WAIT_SAMPLE, STATUS_REAUDIT, STATUS_SAMPLE_GENERATING, STATUS_WAIT_PRODUCING).contains(order.getStatus())) {
             return true;
         }
         if (Objects.equals(order.getStatus(), STATUS_PAUSED)) {
             Integer previous = orderMapper.selectPreviousStatus(order.getId());
-            return previous == null || Objects.equals(previous, STATUS_INITIAL) || Objects.equals(previous, STATUS_WAIT_SAMPLE);
+            return previous == null || List.of(STATUS_INITIAL, STATUS_WAIT_SAMPLE, STATUS_REAUDIT, STATUS_SAMPLE_GENERATING, STATUS_WAIT_PRODUCING).contains(previous);
         }
         return false;
     }
@@ -504,8 +639,8 @@ public class OdOrderFlowServiceImpl implements OdOrderFlowService {
             nodes.add(new OdOrderProgressNode("生产与交付", "pending"));
             return nodes;
         }
-        nodes.add(new OdOrderProgressNode("可做性评审", Integer.valueOf(1).equals(order.getReviewResult()) ? "done" : "current"));
-        nodes.add(new OdOrderProgressNode("样衣确认 / 放行", Integer.valueOf(1).equals(order.getIsProducible()) ? "done" : (status == STATUS_WAIT_SAMPLE ? "current" : "pending")));
+        nodes.add(new OdOrderProgressNode("订单审核", status == STATUS_REAUDIT ? "closed" : Integer.valueOf(1).equals(order.getReviewResult()) ? "done" : "current"));
+        nodes.add(new OdOrderProgressNode("样衣确认 / 放行", Integer.valueOf(1).equals(order.getIsProducible()) ? "done" : (List.of(STATUS_SAMPLE_GENERATING, STATUS_WAIT_PRODUCING).contains(status) ? "current" : "pending")));
         nodes.add(new OdOrderProgressNode("生产与交付", status == STATUS_DONE ? "done" : (status >= STATUS_PRODUCING && status <= STATUS_PART_DELIVERED ? "current" : "pending")));
         nodes.add(new OdOrderProgressNode("订单完成", status == STATUS_DONE ? "done" : "pending"));
         return nodes;

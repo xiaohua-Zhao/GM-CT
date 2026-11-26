@@ -77,6 +77,16 @@
             close_reason_type=#{closeReasonType},close_reason=#{closeReason},close_by=#{reviewBy},close_time=#{reviewTime},updated_at=NOW()
         WHERE order_id=#{orderId} AND is_del=0
     </update>
+    <update id="updateAuditPassed">
+        UPDATE ct_gm.t_od_order SET review_result=1,review_by=#{reviewBy},review_time=#{reviewTime},audit_remark=#{auditRemark},status=2,
+            close_reason_type=NULL,close_reason=NULL,close_by=NULL,close_time=NULL,updated_at=NOW()
+        WHERE order_id=#{orderId} AND is_del=0
+    </update>
+    <update id="updateAuditRejected">
+        UPDATE ct_gm.t_od_order SET review_result=2,review_by=#{reviewBy},review_time=#{reviewTime},audit_remark=#{auditRemark},status=9,
+            close_reason_type=NULL,close_reason=NULL,close_by=NULL,close_time=NULL,updated_at=NOW()
+        WHERE order_id=#{orderId} AND is_del=0
+    </update>
     <update id="updateClose">
         UPDATE ct_gm.t_od_order SET status=8,close_reason_type=#{closeReasonType},close_reason=#{closeReason},
             close_by=#{closeBy},close_time=#{closeTime},updated_at=NOW()

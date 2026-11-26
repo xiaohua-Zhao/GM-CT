@@ -47,7 +47,7 @@ public class PlProdPlanServiceImpl extends AbstractBaseService<PlProdPlanMapper,
         query.eq("is_del", 0)
                 .eq("review_result", 1)
                 .eq("is_producible", 1)
-                .in("status", 2, 3, 4, 6)
+                .eq("status", 11)
                 .apply("NOT EXISTS (SELECT 1 FROM ct_gm.t_pl_prod_plan p WHERE p.order_id=ct_gm.t_od_order.order_id AND p.is_del=0)");
         if (StringUtils.hasText(keyword)) {
             String value = keyword.trim();

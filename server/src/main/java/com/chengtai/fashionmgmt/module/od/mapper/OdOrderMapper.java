@@ -38,6 +38,12 @@ public interface OdOrderMapper extends BaseMapper<OdOrder> {
     /** 写入评审不通过及关闭留痕。 */
     int updateReviewRejected(@Param("orderId") Long orderId, @Param("reviewBy") Long reviewBy, @Param("reviewTime") String reviewTime, @Param("closeReasonType") Integer closeReasonType, @Param("closeReason") String closeReason);
 
+    /** 写入审核通过结果。 */
+    int updateAuditPassed(@Param("orderId") Long orderId, @Param("reviewBy") Long reviewBy, @Param("reviewTime") String reviewTime, @Param("auditRemark") String auditRemark);
+
+    /** 写入审核不通过及待复议结果。 */
+    int updateAuditRejected(@Param("orderId") Long orderId, @Param("reviewBy") Long reviewBy, @Param("reviewTime") String reviewTime, @Param("auditRemark") String auditRemark);
+
     /** 写入订单关闭结果。 */
     int updateClose(@Param("orderId") Long orderId, @Param("closeReasonType") Integer closeReasonType, @Param("closeReason") String closeReason, @Param("closeBy") Long closeBy, @Param("closeTime") String closeTime);
 

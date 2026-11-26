@@ -24,7 +24,7 @@ import java.util.List;
 /** 样衣管理接口。 */
 @Tag(name = "样衣管理")
 @RestController
-@RequestMapping("/api/sm/samples")
+@RequestMapping({"/api/sm/samples", "/api/samples"})
 @RequiredArgsConstructor
 public class SmSampleController extends CodeAwareCrudController<SmSample> {
     private final SmSampleService service;

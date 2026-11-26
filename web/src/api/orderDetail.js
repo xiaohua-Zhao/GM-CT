@@ -10,6 +10,12 @@ export const previewOrderCost = items => http.post('/od/order/cost-preview', ite
 export const createOrderFlow = data => http.post('/od/order', data)
 // 编辑订单及全部明细。
 export const updateOrderFlow = (id, data) => http.put('/od/order/' + id, data)
+// 审核订单。
+export const auditOrder = (id, data) => http.put('/orders/' + id + '/audit', data)
+// 按勾选订单明细批量生成样衣。
+export const createOrderSamples = (id, data) => http.post('/orders/' + id + '/create-samples', data)
+// 为待生产订单创建生产计划。
+export const createOrderProductionPlan = (id, data) => http.post('/orders/' + id + '/create-production-plan', data)
 // 提交可做性评审。
 export const reviewOrderFlow = (id, data) => http.post('/od/order/' + id + '/review', data)
 // 暂停订单。
@@ -17,7 +23,7 @@ export const pauseOrderFlow = id => http.post('/od/order/' + id + '/pause')
 // 恢复暂停订单。
 export const resumeOrderFlow = id => http.post('/od/order/' + id + '/resume')
 // 关闭订单。
-export const closeOrderFlow = (id, data) => http.post('/od/order/' + id + '/close', data)
+export const closeOrderFlow = (id, data) => http.put('/orders/' + id + '/close', data)
 
 // 兼容旧页面：获取指定订单详情。
 export const getOrder = id => http.get('/od/orders/' + id)

@@ -85,7 +85,7 @@ public class SmSampleService extends AbstractBaseService<SmSampleMapper, SmSampl
     /** 查询允许创建样衣的订单：评审通过、未关闭。 */
     public List<OdOrder> eligibleOrders(String keyword) {
         QueryWrapper<OdOrder> query = new QueryWrapper<>();
-        query.eq("is_del", 0).eq("review_result", 1).ne("status", 8).orderByDesc("created_at").last("LIMIT 200");
+        query.eq("is_del", 0).eq("review_result", 1).eq("status", 2).orderByDesc("created_at").last("LIMIT 200");
         if (StringUtils.hasText(keyword)) {
             String value = keyword.trim();
             query.and(wrapper -> wrapper.like("order_no", value)
@@ -130,6 +130,11 @@ public class SmSampleService extends AbstractBaseService<SmSampleMapper, SmSampl
         mapper.updateById(sample);
         if (Integer.valueOf(1).equals(request.getConfirmResult())) {
             orderMapper.releaseForProduction(sample.getOrderId(), LocalDateTime.now().format(DATE_TIME_FORMATTER));
+            Long total = mapper.selectCount(new QueryWrapper<SmSample>().eq("order_id", sample.getOrderId()).eq("is_del", 0));
+            Long confirmed = mapper.selectCount(new QueryWrapper<SmSample>().eq("order_id", sample.getOrderId()).eq("is_del", 0).eq("confirm_result", 1));
+            if (total != null && total > 0 && total.equals(confirmed)) {
+                orderMapper.updateStatus(sample.getOrderId(), 11);
+            }
             writeLog(sample, 4, StringUtils.hasText(request.getRemark()) ? request.getRemark() : "客户确认通过，订单已放行");
         } else {
             writeLog(sample, 2, StringUtils.hasText(request.getRemark()) ? request.getRemark() : "客户确认不通过，需要返修或重新打样");
@@ -160,7 +165,7 @@ public class SmSampleService extends AbstractBaseService<SmSampleMapper, SmSampl
         if (order == null || !Objects.equals(order.getReviewResult(), 1)) {
             throw new BusinessValidationException("订单不存在或尚未评审通过");
         }
-        if (Objects.equals(order.getStatus(), 8)) throw new BusinessValidationException("关闭订单不能制作样衣");
+        if (!Objects.equals(order.getStatus(), 2)) throw new BusinessValidationException("只有已审核订单可以制作样衣");
         Long count = orderItemMapper.selectCount(new QueryWrapper<OdOrderItem>()
                 .eq("order_id", sample.getOrderId()).eq("style_id", sample.getStyleId()).eq("is_del", 0));
         if (count == null || count == 0) throw new BusinessValidationException("所选款式不属于该订单明细");

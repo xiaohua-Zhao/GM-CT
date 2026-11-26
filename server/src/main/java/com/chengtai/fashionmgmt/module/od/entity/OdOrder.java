@@ -49,6 +49,7 @@ public class OdOrder extends BaseEntity {
     private String closeReason; // 关闭原因说明
     private Long closeBy; // 关闭人
     private String closeTime; // 关闭时间
+    private String auditRemark; // 审核备注
 
     @com.baomidou.mybatisplus.annotation.TableField(exist = false)
     private java.math.BigDecimal grossProfit; // 毛利额，实时计算

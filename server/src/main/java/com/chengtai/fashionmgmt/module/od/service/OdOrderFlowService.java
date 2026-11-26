@@ -3,6 +3,9 @@ package com.chengtai.fashionmgmt.module.od.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.chengtai.fashionmgmt.module.od.dto.OdOrderCloseRequest;
 import com.chengtai.fashionmgmt.module.od.dto.OdOrderCostPreview;
+import com.chengtai.fashionmgmt.module.od.dto.OdOrderAuditRequest;
+import com.chengtai.fashionmgmt.module.od.dto.OrderCreateSamplesRequest;
+import com.chengtai.fashionmgmt.module.od.dto.OrderCreateProductionPlanRequest;
 import com.chengtai.fashionmgmt.module.od.entity.OdOrderItem;
 
 import java.util.List;
@@ -16,6 +19,15 @@ public interface OdOrderFlowService {
     /** 分页查询订单列表。 */
     IPage<OdOrder> listOrders(long current, long size, String keyword, Long unitId, Long salesmanId,
                               Integer status, String deliveryStart, String deliveryEnd, Long deptId);
+
+    /** 审核订单：通过进入已审核，不通过进入待复议。 */
+    OdOrder audit(Long orderId, OdOrderAuditRequest request);
+
+    /** 按订单明细批量生成样衣。 */
+    java.util.List<com.chengtai.fashionmgmt.module.sm.entity.SmSample> createSamples(Long orderId, OrderCreateSamplesRequest request);
+
+    /** 为待生产订单创建生产计划。 */
+    com.chengtai.fashionmgmt.module.pl.entity.PlProdPlan createProductionPlan(Long orderId, OrderCreateProductionPlanRequest request);
 
     /** 查询订单详情、明细、收款节点、指标和进度。 */
     OdOrderDetailResponse detail(Long orderId);
