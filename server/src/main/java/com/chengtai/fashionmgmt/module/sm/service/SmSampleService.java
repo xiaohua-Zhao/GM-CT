@@ -1,6 +1,7 @@
 package com.chengtai.fashionmgmt.module.sm.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.chengtai.fashionmgmt.common.AbstractBaseService;
@@ -15,6 +16,12 @@ import com.chengtai.fashionmgmt.module.od.mapper.OdOrderMapper;
 import com.chengtai.fashionmgmt.module.sm.dto.SmSampleConfirmRequest;
 import com.chengtai.fashionmgmt.module.sm.entity.SmSample;
 import com.chengtai.fashionmgmt.module.sm.entity.SmSampleLog;
+import com.chengtai.fashionmgmt.module.sm.dto.SmSampleMadeRequest;
+import com.chengtai.fashionmgmt.module.sm.dto.SmSampleAttachmentRequest;
+import com.chengtai.fashionmgmt.module.sys.entity.SysAttach;
+import com.chengtai.fashionmgmt.module.sys.entity.SysUnit;
+import com.chengtai.fashionmgmt.module.sys.mapper.SysUnitMapper;
+import com.chengtai.fashionmgmt.module.sys.mapper.SysAttachMapper;
 import com.chengtai.fashionmgmt.module.sm.mapper.SmSampleLogMapper;
 import com.chengtai.fashionmgmt.module.sm.mapper.SmSampleMapper;
 import com.chengtai.fashionmgmt.module.sys.service.CodeGeneratorService;
@@ -39,6 +46,8 @@ public class SmSampleService extends AbstractBaseService<SmSampleMapper, SmSampl
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final SmSampleMapper mapper;
     private final SmSampleLogMapper logMapper;
+    private final SysAttachMapper attachMapper;
+    private final SysUnitMapper unitMapper;
     private final OdOrderMapper orderMapper;
     private final OdOrderItemMapper orderItemMapper;
     private final CodeGeneratorService codeGeneratorService;
@@ -69,7 +78,7 @@ public class SmSampleService extends AbstractBaseService<SmSampleMapper, SmSampl
     public boolean update(SmSample request) {
         SmSample existing = getById(request.getId());
         if (existing == null) throw new BusinessValidationException("样衣不存在");
-        if (Objects.equals(existing.getStatus(), 4) || Objects.equals(existing.getStatus(), 5) || Objects.equals(existing.getStatus(), 6)) {
+        if (Objects.equals(existing.getStatus(), 4) || Objects.equals(existing.getStatus(), 6)) {
             throw new BusinessValidationException("已确认或作废样衣不能修改");
         }
         String sampleNo = existing.getSampleNo();
@@ -93,6 +102,96 @@ public class SmSampleService extends AbstractBaseService<SmSampleMapper, SmSampl
                     .or().apply("unit_id IN (SELECT unit_id FROM ct_gm.t_sys_unit WHERE unit_name LIKE CONCAT('%', {0}, '%') AND is_del=0)", value));
         }
         return orderMapper.selectList(query);
+    }
+
+    /** 分页查询样衣并补充订单和客户信息。 */
+    @Override
+    public IPage<SmSample> page(long current, long size, String keyword, String keywordColumn) {
+        QueryWrapper<SmSample> query = new QueryWrapper<>();
+        query.eq("is_del", 0);
+        if (StringUtils.hasText(keyword)) query.like(keywordColumn, keyword.trim());
+        query.orderByDesc("created_at");
+        IPage<SmSample> page = mapper.selectPage(new Page<>(current, size), query);
+        page.getRecords().forEach(this::fillCustomerInfo);
+        return page;
+    }
+
+    /** 查询样衣已上传的附件。 */
+    public List<SysAttach> attachments(Long sampleId) {
+        return attachMapper.selectList(new QueryWrapper<SysAttach>().eq("biz_type", "sample").eq("biz_id", sampleId).eq("is_del", 0).orderByDesc("version_no").orderByDesc("created_at"));
+    }
+
+    /** 删除样衣附件，采用逻辑删除并保留版本历史。 */
+    @Transactional
+    public boolean deleteAttachment(Long sampleId, Long attachId) {
+        SmSample sample = getById(sampleId);
+        if (sample == null) throw new BusinessValidationException("样衣不存在");
+        int affected = attachMapper.update(null, new UpdateWrapper<SysAttach>()
+                .eq("attach_id", attachId).eq("biz_type", "sample").eq("biz_id", sampleId).eq("is_del", 0)
+                .set("is_del", 1).set("updated_at", LocalDateTime.now()));
+        if (affected == 0) throw new BusinessValidationException("附件不存在或已删除");
+        writeLog(sample, 5, "删除样衣附件 #" + attachId);
+        return true;
+    }
+
+    /** 批量保存样衣附件。 */
+    @Transactional
+    public List<SysAttach> attachFiles(Long sampleId, List<SmSampleAttachmentRequest> requests) {
+        SmSample sample = getById(sampleId);
+        if (sample == null) throw new BusinessValidationException("样衣不存在");
+        if (requests == null || requests.isEmpty()) throw new BusinessValidationException("请至少上传一个附件");
+        List<SmSampleAttachmentRequest> validRequests = requests.stream()
+                .filter(Objects::nonNull)
+                .filter(request -> StringUtils.hasText(request.getFileUrl()))
+                .toList();
+        if (validRequests.isEmpty()) throw new BusinessValidationException("附件地址不能为空");
+        // 版本号基于全部历史记录（含已删除附件）递增，确保删除附件后版本号不会回退或被复用。
+        SysAttach latest = attachMapper.selectOne(new QueryWrapper<SysAttach>()
+                .eq("biz_type", "sample").eq("biz_id", sampleId)
+                .orderByDesc("version_no").last("LIMIT 1"));
+        int versionNo = latest == null || latest.getVersionNo() == null ? 1 : latest.getVersionNo() + 1;
+        for (SmSampleAttachmentRequest request : validRequests) {
+            SysAttach attach = new SysAttach();
+            attach.setDeptId(sample.getDeptId());
+            attach.setBizType("sample");
+            attach.setBizId(sampleId);
+            attach.setCategory("样衣附件");
+            attach.setFileName(StringUtils.hasText(request.getFileName()) ? request.getFileName() : "未命名附件");
+            attach.setFileSize(request.getFileSize() == null ? 0L : request.getFileSize());
+            attach.setMimeType(request.getMimeType());
+            attach.setFileUrl(request.getFileUrl());
+            attach.setUploaderId(currentUserId());
+            attach.setUploadTime(LocalDateTime.now().format(DATE_TIME_FORMATTER));
+            attach.setVersionNo(versionNo);
+            attach.setStatus(1);
+            attachMapper.insert(attach);
+        }
+        writeLog(sample, 5, "上传样衣附件 " + validRequests.size() + " 个", validRequests.get(0).getFileUrl());
+        return attachments(sampleId);
+    }
+
+    /** 上传制作附件后标记样衣已制作，状态进入待确认。 */
+    @Transactional
+    public SmSample markMade(Long sampleId, SmSampleMadeRequest request) {
+        SmSample sample = getById(sampleId);
+        if (sample == null) throw new BusinessValidationException("样衣不存在");
+        if (!Objects.equals(sample.getStatus(), 1) && !Objects.equals(sample.getStatus(), 5)) {
+            throw new BusinessValidationException("只有待制作或待修正样衣可以标记已制作");
+        }
+        Long existing = attachMapper.selectCount(new QueryWrapper<SysAttach>().eq("biz_type", "sample").eq("biz_id", sampleId).eq("is_del", 0));
+        if ((existing == null || existing == 0) && (request == null || !StringUtils.hasText(request.getFileUrl()))) {
+            throw new BusinessValidationException("请先上传样衣附件");
+        }
+        if ((existing == null || existing == 0) && request != null && StringUtils.hasText(request.getFileUrl())) {
+            SmSampleAttachmentRequest attachment = new SmSampleAttachmentRequest();
+            attachment.setFileName(request.getFileName()); attachment.setFileUrl(request.getFileUrl());
+            attachment.setFileSize(request.getFileSize()); attachment.setMimeType(request.getMimeType());
+            attachFiles(sampleId, List.of(attachment));
+        }
+        sample.setStatus(2);
+        mapper.updateById(sample);
+        writeLog(sample, 5, request != null && StringUtils.hasText(request.getRemark()) ? request.getRemark() : "样衣已制作并上传附件", request == null ? null : request.getFileUrl());
+        return getById(sampleId);
     }
 
     /** 将样衣寄出并进入客户确认中。 */
@@ -157,6 +256,20 @@ public class SmSampleService extends AbstractBaseService<SmSampleMapper, SmSampl
         if (sample.getStatus() == null) sample.setStatus(1);
     }
 
+    /** 补充样衣关联订单与客户单位信息。 */
+    private void fillCustomerInfo(SmSample sample) {
+        OdOrder order = orderMapper.selectById(sample.getOrderId());
+        if (order == null) return;
+        sample.setOrderNo(order.getOrderNo());
+        sample.setUnitId(order.getUnitId());
+        SysUnit unit = order.getUnitId() == null ? null : unitMapper.selectById(order.getUnitId());
+        if (unit != null) {
+            sample.setCustomerName(unit.getUnitName());
+            sample.setContactName(unit.getContact());
+            sample.setContactPhone(unit.getPhone());
+        }
+    }
+
     /** 校验样衣关联订单已评审且订单明细包含所选款式。 */
     private void validate(SmSample sample) {
         if (sample.getOrderId() == null) throw new BusinessValidationException("请选择订单");
@@ -165,7 +278,7 @@ public class SmSampleService extends AbstractBaseService<SmSampleMapper, SmSampl
         if (order == null || !Objects.equals(order.getReviewResult(), 1)) {
             throw new BusinessValidationException("订单不存在或尚未评审通过");
         }
-        if (!Objects.equals(order.getStatus(), 2)) throw new BusinessValidationException("只有已审核订单可以制作样衣");
+        if (!Objects.equals(order.getStatus(), 2) && !Objects.equals(order.getStatus(), 10)) throw new BusinessValidationException("订单当前状态不能维护样衣");
         Long count = orderItemMapper.selectCount(new QueryWrapper<OdOrderItem>()
                 .eq("order_id", sample.getOrderId()).eq("style_id", sample.getStyleId()).eq("is_del", 0));
         if (count == null || count == 0) throw new BusinessValidationException("所选款式不属于该订单明细");
@@ -173,12 +286,18 @@ public class SmSampleService extends AbstractBaseService<SmSampleMapper, SmSampl
 
     /** 写样衣跟单记录。 */
     private void writeLog(SmSample sample, int actionType, String content) {
+        writeLog(sample, actionType, content, null);
+    }
+
+    /** 写样衣跟单记录并保留附件地址。 */
+    private void writeLog(SmSample sample, int actionType, String content, String attachUrl) {
         SmSampleLog entry = new SmSampleLog();
         entry.setDeptId(sample.getDeptId());
         entry.setSampleId(sample.getId());
         entry.setLogTime(LocalDateTime.now().format(DATE_TIME_FORMATTER));
         entry.setActionType(actionType);
         entry.setContent(content);
+        entry.setAttachUrl(attachUrl);
         entry.setOperatorId(currentUserId());
         logMapper.insert(entry);
     }

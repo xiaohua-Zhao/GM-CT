@@ -69,8 +69,11 @@
           <template #default="{ row }"><el-tag :type="row.isProducible === 1 ? 'success' : 'info'">{{ row.isProducible === 1 ? '已放行' : '未放行' }}</el-tag></template>
         </el-table-column>
         <el-table-column prop="delayDays" label="逾期天数" width="95" />
-        <el-table-column label="操作" fixed="right" width="120" align="center">
+        <el-table-column label="操作" fixed="right" width="285" align="center">
           <template #default="{ row }">
+            <el-button v-if="row.status === 1 || row.status === 9" link type="warning" @click="openAudit(row)">{{ row.status === 9 ? '重新审核' : '订单审核' }}</el-button>
+            <el-button v-if="row.status === 2" link type="primary" @click="openSamples(row)">制作样衣</el-button>
+            <el-button v-if="row.status === 11" link type="primary" @click="openPlan(row)">生产计划</el-button>
             <el-button v-if="row.status !== 5 && row.status !== 8" link type="danger" @click="openClose(row)">关闭订单</el-button>
             <span v-else>—</span>
           </template>
@@ -86,6 +89,25 @@
       </el-form>
       <template #footer><el-button @click="closeVisible=false">取消</el-button><el-button type="danger" :loading="closing" @click="submitClose">确认关闭</el-button></template>
     </el-dialog>
+
+    <el-dialog v-model="auditVisible" title="订单审核" width="520px" destroy-on-close>
+      <el-form label-width="100px">
+        <el-form-item label="审核结果"><el-radio-group v-model="auditForm.auditResult"><el-radio value="pass">通过</el-radio><el-radio value="reject">不通过，待复议</el-radio></el-radio-group></el-form-item>
+        <el-form-item label="审核备注"><el-input v-model="auditForm.auditRemark" type="textarea" :rows="4" maxlength="200" show-word-limit /></el-form-item>
+      </el-form>
+      <template #footer><el-button @click="auditVisible=false">取消</el-button><el-button type="primary" :loading="actionSaving" @click="submitAudit">确认审核</el-button></template>
+    </el-dialog>
+
+    <el-dialog v-model="samplesVisible" title="制作样衣" width="740px" destroy-on-close>
+      <el-alert title="请选择需要制作样衣的订单明细" type="info" show-icon :closable="false" style="margin-bottom:14px" />
+      <el-checkbox-group v-model="selectedItemIds"><el-table :data="orderItems" border stripe><el-table-column width="55"><template #default="{ row }"><el-checkbox :value="row.id" /></template></el-table-column><el-table-column prop="itemNo" label="行号" width="70" /><el-table-column label="款式" min-width="180"><template #default="{ row }">{{ row.styleCode || row.styleId }}</template></el-table-column><el-table-column prop="color" label="颜色" width="100" /><el-table-column prop="size" label="尺码" width="80" /><el-table-column prop="qty" label="数量" width="90" /></el-table></el-checkbox-group>
+      <template #footer><el-button @click="samplesVisible=false">取消</el-button><el-button type="primary" :loading="actionSaving" @click="submitSamples">生成样衣</el-button></template>
+    </el-dialog>
+
+    <el-dialog v-model="planVisible" title="创建生产计划" width="520px" destroy-on-close>
+      <el-form label-width="100px"><el-form-item label="工序" required><el-select v-model="planForm.processId" filterable style="width:100%"><el-option v-for="item in processOptions" :key="item.id" :label="item.processCode + ' ' + item.processName" :value="item.id" /></el-select></el-form-item><el-form-item label="计划数量" required><el-input v-model="planForm.planQty" inputmode="decimal" /></el-form-item></el-form>
+      <template #footer><el-button @click="planVisible=false">取消</el-button><el-button type="primary" :loading="actionSaving" @click="submitPlan">保存计划</el-button></template>
+    </el-dialog>
   </section>
 </template>
 
@@ -93,7 +115,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { closeOrderFlow, getOrderList } from '../api/orderDetail'
+import { auditOrder, closeOrderFlow, createOrderProductionPlan, createOrderSamples, getOrderFlow, getOrderList } from '../api/orderDetail'
 import { loadLookupData } from '../api/lookups'
 
 const router = useRouter()
@@ -105,6 +127,16 @@ const size = ref(10)
 const unitOptions = ref([])
 const staffOptions = ref([])
 const deptOptions = ref([])
+const processOptions = ref([])
+const auditVisible = ref(false)
+const samplesVisible = ref(false)
+const planVisible = ref(false)
+const actionSaving = ref(false)
+const actionRow = ref(null)
+const orderItems = ref([])
+const selectedItemIds = ref([])
+const auditForm = reactive({ auditResult: 'pass', auditRemark: '' })
+const planForm = reactive({ processId: null, planQty: 0 })
 const filters = reactive({ keyword: '', unitId: null, salesmanId: null, status: null, deptId: null, deliveryStart: '', deliveryEnd: '' })
 const orderTypeOptions = [{ label: '内销订单', value: 1 }, { label: '加工单', value: 2 }, { label: '返单', value: 3 }]
 const statusOptions = [{ label: '初始', value: 1 }, { label: '已审核', value: 2 }, { label: '生产中', value: 3 }, { label: '部分交付', value: 4 }, { label: '已完成', value: 5 }, { label: '延期', value: 6 }, { label: '暂停', value: 7 }, { label: '已关闭', value: 8 }, { label: '待复议', value: 9 }, { label: '样衣生成中', value: 10 }, { label: '待生产', value: 11 }]
@@ -135,8 +167,8 @@ function resetFilters() { Object.assign(filters, { keyword: '', unitId: null, sa
 // 并行加载客户、业务员和部门筛选数据。
 async function loadOptions() {
   try {
-    const [units, staffs, depts] = await Promise.all([loadLookupData('units'), loadLookupData('staffs'), loadLookupData('depts')])
-    unitOptions.value = units; staffOptions.value = staffs; deptOptions.value = depts
+    const [units, staffs, depts, processes] = await Promise.all([loadLookupData('units'), loadLookupData('staffs'), loadLookupData('depts'), loadLookupData('processes')])
+    unitOptions.value = units; staffOptions.value = staffs; deptOptions.value = depts; processOptions.value = processes
   } catch (error) { ElMessage.error(error?.message || '加载筛选数据失败') }
 }
 // 返回客户单位显示文本。
@@ -153,6 +185,18 @@ function percent(value) { return (Number(value || 0) * 100).toFixed(2) + '%' }
 function profitClass(value) { return Number(value || 0) < 0 ? 'profit-loss' : Number(value || 0) === 0 ? 'profit-even' : 'profit-good' }
 // 返回订单状态标签颜色。
 function statusType(status) { return ({ 1: 'info', 2: 'warning', 3: 'primary', 4: 'warning', 5: 'success', 6: 'danger', 7: 'warning', 8: 'danger', 9: 'warning', 10: 'primary', 11: 'warning' })[status] || 'info' }
+// 打开订单审核弹框。
+function openAudit(row) { actionRow.value = row; auditForm.auditResult = 'pass'; auditForm.auditRemark = ''; auditVisible.value = true }
+// 提交订单审核并刷新列表。
+async function submitAudit() { actionSaving.value = true; try { const r = await auditOrder(actionRow.value.id, auditForm); if (r.data?.code !== 0) throw new Error(r.data?.message || '审核失败'); ElMessage.success('订单审核完成'); auditVisible.value = false; await load() } catch (error) { ElMessage.error(error?.response?.data?.message || error.message || '审核失败') } finally { actionSaving.value = false } }
+// 加载订单明细并打开制作样衣弹框。
+async function openSamples(row) { actionRow.value = row; selectedItemIds.value = []; try { const r = await getOrderFlow(row.id); orderItems.value = r.data?.data?.items || []; samplesVisible.value = true } catch (error) { ElMessage.error(error?.response?.data?.message || error.message || '加载订单明细失败') } }
+// 批量生成样衣并刷新列表。
+async function submitSamples() { if (!selectedItemIds.value.length) return ElMessage.warning('请至少选择一条订单明细'); actionSaving.value = true; try { const r = await createOrderSamples(actionRow.value.id, { selectedItemIds: selectedItemIds.value }); if (r.data?.code !== 0) throw new Error(r.data?.message || '生成样衣失败'); ElMessage.success('样衣生成成功'); samplesVisible.value = false; await load() } catch (error) { ElMessage.error(error?.response?.data?.message || error.message || '生成样衣失败') } finally { actionSaving.value = false } }
+// 打开订单生产计划弹框。
+async function openPlan(row) { actionRow.value = row; planForm.processId = null; try { const r = await getOrderFlow(row.id); planForm.planQty = Number(r.data?.data?.order?.qtyTotal || row.qtyTotal || 0); planVisible.value = true } catch (error) { ElMessage.error(error?.response?.data?.message || error.message || '加载订单信息失败') } }
+// 创建生产计划并刷新列表。
+async function submitPlan() { if (!planForm.processId) return ElMessage.warning('请选择工序'); actionSaving.value = true; try { const r = await createOrderProductionPlan(actionRow.value.id, { processId: planForm.processId, planQty: Number(planForm.planQty || 0) }); if (r.data?.code !== 0) throw new Error(r.data?.message || '创建生产计划失败'); ElMessage.success('生产计划创建成功'); planVisible.value = false; await load() } catch (error) { ElMessage.error(error?.response?.data?.message || error.message || '创建生产计划失败') } finally { actionSaving.value = false } }
 // 打开订单关闭弹框。
 function openClose(row) { closingRow.value = row; closeForm.closeReasonType = 3; closeForm.closeReason = ''; closeVisible.value = true }
 // 提交订单关闭申请并刷新列表。

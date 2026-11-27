@@ -444,7 +444,7 @@ function progressText(state) { return ({ done: '已完成', current: '进行中'
 // 返回样衣状态颜色。
 function sampleStatusType(status) { return ({ 1: 'primary', 2: 'warning', 3: 'warning', 4: 'success', 5: 'danger', 6: 'info' })[status] || 'info' }
 // 返回样衣状态文本。
-function sampleStatusText(status) { return ({ 1: '制作中', 2: '已寄出', 3: '客户确认中', 4: '客户已确认', 5: '客户不通过', 6: '作废' })[status] || '—' }
+function sampleStatusText(status) { return ({ 1: '待制作', 2: '待确认', 3: '客户确认中', 4: '客户已确认', 5: '待修正', 6: '作废' })[status] || '—' }
 // 返回样衣确认结果文本。
 function sampleConfirmText(result) { return ({ 0: '待确认', 1: '通过', 2: '不通过' })[result] || '—' }
 // 返回生产计划状态文本。

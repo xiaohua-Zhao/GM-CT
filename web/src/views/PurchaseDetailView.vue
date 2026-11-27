@@ -1,89 +1,588 @@
 <template>
   <section class="purchase-detail-page" v-loading="loading">
-    <div class="page-heading"><div><p class="page-breadcrumb">采购管理 / 采购订单详情</p><h1 class="page-title">{{ order.poNo || '采购订单详情' }}</h1><p class="page-desc">维护采购主单、采购明细、付款计划，并查看关联进项发票。</p></div><div class="page-actions"><el-button @click="router.push('/purchases')">返回采购列表</el-button><el-button @click="loadAll">刷新</el-button><el-button type="primary" :loading="saving" @click="saveOrder">保存采购订单</el-button></div></div>
+    <div class="page-heading">
+      <div><p class="page-breadcrumb">采购管理 / 采购订单详情</p>
+        <h1 class="page-title">{{ order.poNo || '采购订单详情' }}</h1>
+        <p class="page-desc">维护采购主单、采购明细、付款计划，并查看关联进项发票。</p></div>
+      <div class="page-actions">
+        <el-button @click="router.push('/purchases')">返回采购列表</el-button>
+        <el-button @click="loadAll">刷新</el-button>
+        <el-button type="primary" :loading="saving" @click="saveOrder">保存采购订单</el-button>
+      </div>
+    </div>
 
     <el-form ref="formRef" :model="order" :rules="rules" label-position="left" label-width="106px">
-      <section class="content-panel detail-section"><div class="detail-title"><span>01</span><div><strong>采购基础信息</strong><small>供应商、关联销售单和日期</small></div></div><div class="grid3">
-        <el-form-item label="采购单号" prop="poNo"><el-input v-model="order.poNo" readonly class="auto-code-input" /></el-form-item>
-        <el-form-item label="供应商" prop="supplierId"><el-select v-model="order.supplierId" filterable style="width:100%"><el-option v-for="item in supplierOptions" :key="item.id" :label="optionLabel('suppliers',item)" :value="item.id" /></el-select></el-form-item>
-        <el-form-item label="关联销售单"><el-select v-model="order.orderId" filterable clearable style="width:100%"><el-option v-for="item in salesOrders" :key="item.id" :label="item.orderNo" :value="item.id" /></el-select></el-form-item>
-        <el-form-item label="归属部门"><el-select v-model="order.deptId" filterable style="width:100%"><el-option v-for="item in deptOptions" :key="item.id" :label="optionLabel('depts',item)" :value="item.id" /></el-select></el-form-item>
-        <el-form-item label="采购类型"><el-select v-model="order.poType" style="width:100%"><el-option v-for="item in purchaseTypeOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
-        <el-form-item label="采购员"><el-select v-model="order.buyerId" filterable clearable style="width:100%"><el-option v-for="item in staffOptions" :key="item.id" :label="optionLabel('staffs',item)" :value="item.id" /></el-select></el-form-item>
-        <el-form-item label="采购日期" prop="poDate"><el-date-picker v-model="order.poDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item>
-        <el-form-item label="预计到货"><el-date-picker v-model="order.expectArriveDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item>
-        <el-form-item label="汇总入库单号"><el-input v-model="order.stockInNo" /></el-form-item>
-      </div></section>
-      <section class="content-panel detail-section"><div class="detail-title"><span>02</span><div><strong>金额与到货控制</strong><small>采购金额、到货数量和状态</small></div></div><div class="grid3">
-        <el-form-item label="采购数量"><el-input-number v-model="order.qtyTotal" :min="0" :precision="2" style="width:100%" /></el-form-item><el-form-item label="采购金额"><el-input-number v-model="order.amount" :min="0" :precision="2" style="width:100%" /></el-form-item><el-form-item label="税率"><el-input-number v-model="order.taxRate" :min="0" :max="1" :precision="4" style="width:100%" /></el-form-item><el-form-item label="价税合计"><el-input-number v-model="order.amountTax" :min="0" :precision="2" style="width:100%" /></el-form-item><el-form-item label="已到货数量"><el-input-number v-model="order.qtyReceived" :min="0" :precision="2" style="width:100%" /></el-form-item><el-form-item label="采购状态"><el-select v-model="order.status" style="width:100%"><el-option v-for="item in purchaseStatusOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item><el-form-item label="备注" class="wide"><el-input v-model="order.remark" type="textarea" :rows="3" /></el-form-item>
-      </div></section>
+      <section class="content-panel detail-section">
+        <div class="detail-title"><span>01</span>
+          <div><strong>采购基础信息</strong><small>供应商、关联销售单和日期</small></div>
+        </div>
+        <div class="grid3">
+          <el-form-item label="采购单号" prop="poNo">
+            <el-input v-model="order.poNo" readonly class="auto-code-input"/>
+          </el-form-item>
+          <el-form-item label="供应商" prop="supplierId">
+            <el-select v-model="order.supplierId" filterable style="width:100%">
+              <el-option v-for="item in supplierOptions" :key="item.id" :label="optionLabel('suppliers',item)"
+                         :value="item.id"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="关联销售单">
+            <el-select v-model="order.orderId" filterable clearable style="width:100%">
+              <el-option v-for="item in salesOrders" :key="item.id" :label="item.orderNo" :value="item.id"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="归属部门">
+            <el-select v-model="order.deptId" filterable style="width:100%">
+              <el-option v-for="item in deptOptions" :key="item.id" :label="optionLabel('depts',item)"
+                         :value="item.id"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="采购类型">
+            <el-select v-model="order.poType" style="width:100%">
+              <el-option v-for="item in purchaseTypeOptions" :key="item.value" :label="item.label" :value="item.value"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="采购员">
+            <el-select v-model="order.buyerId" filterable clearable style="width:100%">
+              <el-option v-for="item in staffOptions" :key="item.id" :label="optionLabel('staffs',item)"
+                         :value="item.id"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="采购日期" prop="poDate">
+            <el-date-picker v-model="order.poDate" type="date" value-format="YYYY-MM-DD" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="预计到货">
+            <el-date-picker v-model="order.expectArriveDate" type="date" value-format="YYYY-MM-DD" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="汇总入库单号">
+            <el-input v-model="order.stockInNo"/>
+          </el-form-item>
+        </div>
+      </section>
+      <section class="content-panel detail-section">
+        <div class="detail-title"><span>02</span>
+          <div><strong>金额与到货控制</strong><small>采购金额、到货数量和状态</small></div>
+        </div>
+        <div class="grid3">
+          <el-form-item label="采购数量">
+            <el-input-number v-model="order.qtyTotal" :min="0" :precision="2" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="采购金额">
+            <el-input-number v-model="order.amount" :min="0" :precision="2" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="税率">
+            <el-input-number v-model="order.taxRate" :min="0" :max="1" :precision="4" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="价税合计">
+            <el-input-number v-model="order.amountTax" :min="0" :precision="2" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="已到货数量">
+            <el-input-number v-model="order.qtyReceived" :min="0" :precision="2" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="采购状态">
+            <el-select v-model="order.status" style="width:100%">
+              <el-option v-for="item in purchaseStatusOptions" :key="item.value" :label="item.label"
+                         :value="item.value"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="备注" class="wide">
+            <el-input v-model="order.remark" type="textarea" :rows="3"/>
+          </el-form-item>
+        </div>
+      </section>
     </el-form>
 
-    <section class="content-panel detail-section"><div class="section-heading"><div class="detail-title compact"><span>03</span><div><strong>采购明细</strong><small>维护物料、数量、价格和到货信息</small></div></div><el-button type="primary" plain @click="openItemCreate">新增采购明细</el-button></div>
-      <el-table :data="items" border empty-text="暂无采购明细"><el-table-column label="物料" min-width="180"><template #default="{row}">{{ materialLabel(row.materialId) }}</template></el-table-column><el-table-column prop="part" label="部位" width="90" /><el-table-column prop="unit" label="单位" width="70" /><el-table-column prop="qty" label="数量" width="90" /><el-table-column label="单价" width="100"><template #default="{row}">{{ money(row.price) }}</template></el-table-column><el-table-column label="金额" width="110"><template #default="{row}">{{ money(row.amount) }}</template></el-table-column><el-table-column prop="qtyReceived" label="已到货" width="90" /><el-table-column prop="arriveDate" label="到货日期" width="110" /><el-table-column label="操作" width="130" fixed="right"><template #default="{row}"><el-button link type="primary" @click="openItemEdit(row)">编辑</el-button><el-button link type="danger" @click="removeItem(row)">删除</el-button></template></el-table-column></el-table>
+    <section class="content-panel detail-section">
+      <div class="section-heading">
+        <div class="detail-title compact"><span>03</span>
+          <div><strong>采购明细</strong><small>维护物料、数量、价格和到货信息</small></div>
+        </div>
+        <el-button type="primary" plain @click="openItemCreate">新增采购明细</el-button>
+      </div>
+      <el-table :data="items" border empty-text="暂无采购明细">
+        <el-table-column label="物料" min-width="180">
+          <template #default="{row}">{{ materialLabel(row.materialId) }}</template>
+        </el-table-column>
+        <el-table-column prop="part" label="部位" width="90"/>
+        <el-table-column prop="unit" label="单位" width="70"/>
+        <el-table-column prop="qty" label="数量" width="90"/>
+        <el-table-column label="单价" width="100">
+          <template #default="{row}">{{ money(row.price) }}</template>
+        </el-table-column>
+        <el-table-column label="金额" width="110">
+          <template #default="{row}">{{ money(row.amount) }}</template>
+        </el-table-column>
+        <el-table-column prop="qtyReceived" label="已到货" width="90"/>
+        <el-table-column prop="arriveDate" label="到货日期" width="110"/>
+        <el-table-column label="操作" width="130" fixed="right">
+          <template #default="{row}">
+            <el-button link type="primary" @click="openItemEdit(row)">编辑</el-button>
+            <el-button link type="danger" @click="removeItem(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </section>
 
-    <section class="content-panel detail-section"><div class="section-heading"><div class="detail-title compact"><span>04</span><div><strong>付款计划</strong><small>按采购节点维护预付款、到货款和尾款</small></div></div><el-button type="primary" plain @click="openPlanCreate">新增付款计划</el-button></div>
-      <el-table :data="plans" border empty-text="暂无付款计划"><el-table-column prop="planNo" label="计划单号" width="150" /><el-table-column prop="seqNo" label="节点" width="70" /><el-table-column label="节点类型" width="120"><template #default="{row}">{{ optionText(planNodeOptions,row.nodeType) }}</template></el-table-column><el-table-column prop="planDate" label="计划日期" width="110" /><el-table-column label="计划金额" width="115"><template #default="{row}">{{ money(row.planAmount) }}</template></el-table-column><el-table-column label="已付金额" width="115"><template #default="{row}">{{ money(row.paidAmount) }}</template></el-table-column><el-table-column label="状态" width="100"><template #default="{row}"><el-tag :type="planStatusType(row.status)">{{ optionText(planStatusOptions,row.status) }}</el-tag></template></el-table-column><el-table-column label="操作" width="130"><template #default="{row}"><el-button link type="primary" @click="openPlanEdit(row)">编辑</el-button><el-button link type="danger" @click="removePlan(row)">删除</el-button></template></el-table-column></el-table>
+    <section class="content-panel detail-section">
+      <div class="section-heading">
+        <div class="detail-title compact"><span>04</span>
+          <div><strong>付款计划</strong><small>按采购节点维护预付款、到货款和尾款</small></div>
+        </div>
+        <el-button type="primary" plain @click="openPlanCreate">新增付款计划</el-button>
+      </div>
+      <el-table :data="plans" border empty-text="暂无付款计划">
+        <el-table-column prop="planNo" label="计划单号" width="150"/>
+        <el-table-column prop="seqNo" label="节点" width="70"/>
+        <el-table-column label="节点类型" width="120">
+          <template #default="{row}">{{ optionText(planNodeOptions, row.nodeType) }}</template>
+        </el-table-column>
+        <el-table-column prop="planDate" label="计划日期" width="110"/>
+        <el-table-column label="计划金额" width="115">
+          <template #default="{row}">{{ money(row.planAmount) }}</template>
+        </el-table-column>
+        <el-table-column label="已付金额" width="115">
+          <template #default="{row}">{{ money(row.paidAmount) }}</template>
+        </el-table-column>
+        <el-table-column label="状态" width="100">
+          <template #default="{row}">
+            <el-tag :type="planStatusType(row.status)">{{ optionText(planStatusOptions, row.status) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="130">
+          <template #default="{row}">
+            <el-button link type="primary" @click="openPlanEdit(row)">编辑</el-button>
+            <el-button link type="danger" @click="removePlan(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </section>
 
-    <section class="content-panel detail-section"><div class="detail-title"><span>05</span><div><strong>关联进项发票</strong><small>展示财务录入并关联到本采购单的发票</small></div></div>
-      <el-table :data="invoices" border empty-text="暂无关联发票"><el-table-column prop="invoiceNo" label="发票号码" width="150" /><el-table-column label="类型" width="100"><template #default="{row}">{{ optionText(invoiceTypeOptions,row.invoiceType) }}</template></el-table-column><el-table-column prop="invoiceTitle" label="发票抬头" min-width="180" /><el-table-column label="不含税金额" width="115"><template #default="{row}">{{ money(row.amount) }}</template></el-table-column><el-table-column label="税额" width="100"><template #default="{row}">{{ money(row.taxAmount) }}</template></el-table-column><el-table-column label="价税合计" width="115"><template #default="{row}">{{ money(row.totalAmount) }}</template></el-table-column><el-table-column prop="invoiceDate" label="开票日期" width="110" /><el-table-column label="状态" width="100"><template #default="{row}">{{ optionText(invoiceStatusOptions,row.status) }}</template></el-table-column></el-table>
+    <section class="content-panel detail-section">
+      <div class="detail-title"><span>05</span>
+        <div><strong>关联进项发票</strong><small>展示财务录入并关联到本采购单的发票</small></div>
+      </div>
+      <el-table :data="invoices" border empty-text="暂无关联发票">
+        <el-table-column prop="invoiceNo" label="发票号码" width="150"/>
+        <el-table-column label="类型" width="100">
+          <template #default="{row}">{{ optionText(invoiceTypeOptions, row.invoiceType) }}</template>
+        </el-table-column>
+        <el-table-column prop="invoiceTitle" label="发票抬头" min-width="180"/>
+        <el-table-column label="不含税金额" width="115">
+          <template #default="{row}">{{ money(row.amount) }}</template>
+        </el-table-column>
+        <el-table-column label="税额" width="100">
+          <template #default="{row}">{{ money(row.taxAmount) }}</template>
+        </el-table-column>
+        <el-table-column label="价税合计" width="115">
+          <template #default="{row}">{{ money(row.totalAmount) }}</template>
+        </el-table-column>
+        <el-table-column prop="invoiceDate" label="开票日期" width="110"/>
+        <el-table-column label="状态" width="100">
+          <template #default="{row}">{{ optionText(invoiceStatusOptions, row.status) }}</template>
+        </el-table-column>
+      </el-table>
     </section>
 
-    <el-dialog v-model="itemDialog" :title="itemEditingId?'编辑采购明细':'新增采购明细'" width="760px" destroy-on-close><el-form :model="itemForm" label-position="left" label-width="100px"><div class="grid2"><el-form-item label="物料"><el-select v-model="itemForm.materialId" filterable style="width:100%" @change="syncMaterialUnit"><el-option v-for="item in materialOptions" :key="item.id" :label="optionLabel('materials',item)" :value="item.id" /></el-select></el-form-item><el-form-item label="使用部位"><el-input v-model="itemForm.part" /></el-form-item><el-form-item label="单位"><el-input v-model="itemForm.unit" /></el-form-item><el-form-item label="数量"><el-input-number v-model="itemForm.qty" :min="0" :precision="2" style="width:100%" /></el-form-item><el-form-item label="单价"><el-input-number v-model="itemForm.price" :min="0" :precision="4" style="width:100%" /></el-form-item><el-form-item label="金额"><el-input-number v-model="itemForm.amount" :min="0" :precision="2" style="width:100%" /></el-form-item><el-form-item label="已到货"><el-input-number v-model="itemForm.qtyReceived" :min="0" :precision="2" style="width:100%" /></el-form-item><el-form-item label="到货日期"><el-date-picker v-model="itemForm.arriveDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item><el-form-item label="备注" class="wide"><el-input v-model="itemForm.remark" type="textarea" :rows="2" /></el-form-item></div></el-form><template #footer><el-button @click="itemDialog=false">取消</el-button><el-button type="primary" :loading="saving" @click="saveItem">保存</el-button></template></el-dialog>
+    <el-dialog v-model="itemDialog" :title="itemEditingId?'编辑采购明细':'新增采购明细'" width="760px" destroy-on-close>
+      <el-form :model="itemForm" label-position="left" label-width="100px">
+        <div class="grid2">
+          <el-form-item label="物料">
+            <el-select v-model="itemForm.materialId" filterable style="width:100%" @change="syncMaterialUnit">
+              <el-option v-for="item in materialOptions" :key="item.id" :label="optionLabel('materials',item)"
+                         :value="item.id"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="使用部位">
+            <el-input v-model="itemForm.part"/>
+          </el-form-item>
+          <el-form-item label="单位">
+            <el-input v-model="itemForm.unit"/>
+          </el-form-item>
+          <el-form-item label="数量">
+            <el-input-number v-model="itemForm.qty" :min="0" :precision="2" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="单价">
+            <el-input-number v-model="itemForm.price" :min="0" :precision="4" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="金额">
+            <el-input-number v-model="itemForm.amount" :min="0" :precision="2" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="已到货">
+            <el-input-number v-model="itemForm.qtyReceived" :min="0" :precision="2" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="到货日期">
+            <el-date-picker v-model="itemForm.arriveDate" type="date" value-format="YYYY-MM-DD" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="备注" class="wide">
+            <el-input v-model="itemForm.remark" type="textarea" :rows="2"/>
+          </el-form-item>
+        </div>
+      </el-form>
+      <template #footer>
+        <el-button @click="itemDialog=false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="saveItem">保存</el-button>
+      </template>
+    </el-dialog>
 
-    <el-dialog v-model="planDialog" :title="planEditingId?'编辑付款计划':'新增付款计划'" width="720px" destroy-on-close><el-form :model="planForm" label-position="left" label-width="110px"><div class="grid2"><el-form-item label="计划单号"><el-input v-model="planForm.planNo" /></el-form-item><el-form-item label="节点序号"><el-input-number v-model="planForm.seqNo" :min="1" style="width:100%" /></el-form-item><el-form-item label="节点类型"><el-select v-model="planForm.nodeType" style="width:100%"><el-option v-for="item in planNodeOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item><el-form-item label="计划日期"><el-date-picker v-model="planForm.planDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item><el-form-item label="计划金额"><el-input-number v-model="planForm.planAmount" :min="0" :precision="2" style="width:100%" /></el-form-item><el-form-item label="状态"><el-select v-model="planForm.status" style="width:100%"><el-option v-for="item in planStatusOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item><el-form-item label="备注" class="wide"><el-input v-model="planForm.remark" type="textarea" :rows="2" /></el-form-item></div></el-form><template #footer><el-button @click="planDialog=false">取消</el-button><el-button type="primary" :loading="saving" @click="savePlan">保存</el-button></template></el-dialog>
+    <el-dialog v-model="planDialog" :title="planEditingId?'编辑付款计划':'新增付款计划'" width="720px" destroy-on-close>
+      <el-form :model="planForm" label-position="left" label-width="110px">
+        <div class="grid2">
+          <el-form-item label="计划单号">
+            <el-input v-model="planForm.planNo"/>
+          </el-form-item>
+          <el-form-item label="节点序号">
+            <el-input-number v-model="planForm.seqNo" :min="1" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="节点类型">
+            <el-select v-model="planForm.nodeType" style="width:100%">
+              <el-option v-for="item in planNodeOptions" :key="item.value" :label="item.label" :value="item.value"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="计划日期">
+            <el-date-picker v-model="planForm.planDate" type="date" value-format="YYYY-MM-DD" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="计划金额">
+            <el-input-number v-model="planForm.planAmount" :min="0" :precision="2" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="planForm.status" style="width:100%">
+              <el-option v-for="item in planStatusOptions" :key="item.value" :label="item.label" :value="item.value"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="备注" class="wide">
+            <el-input v-model="planForm.remark" type="textarea" :rows="2"/>
+          </el-form-item>
+        </div>
+      </el-form>
+      <template #footer>
+        <el-button @click="planDialog=false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="savePlan">保存</el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup>
-import { onMounted,reactive,ref } from 'vue'
-import { useRoute,useRouter } from 'vue-router'
-import { ElMessage,ElMessageBox } from 'element-plus'
-import { loadLookupData,lookupDefinitions } from '../api/lookups'
-import { getPurchaseOrder,updatePurchaseOrder,getPurchaseItems,createPurchaseItem,updatePurchaseItem,deletePurchaseItem,getPurchasePlans,createPurchasePlan,updatePurchasePlan,deletePurchasePlan,getPurchaseInvoices } from '../api/purchaseDetail'
-const route=useRoute(),router=useRouter(),loading=ref(false),saving=ref(false),formRef=ref(null)
-const order=reactive({}),items=ref([]),plans=ref([]),invoices=ref([]),supplierOptions=ref([]),staffOptions=ref([]),deptOptions=ref([]),materialOptions=ref([]),salesOrders=ref([])
-const itemDialog=ref(false),planDialog=ref(false),itemEditingId=ref(null),planEditingId=ref(null),itemForm=reactive({}),planForm=reactive({})
-const purchaseTypeOptions=[{label:'面料',value:1},{label:'辅料',value:2},{label:'包装',value:3},{label:'外协',value:4}]
-const purchaseStatusOptions=[{label:'待审',value:1},{label:'已审',value:2},{label:'部分到货',value:3},{label:'已到货',value:4},{label:'已入库',value:5},{label:'取消',value:6}]
-const planNodeOptions=[{label:'预付款',value:1},{label:'到货款',value:2},{label:'尾款',value:3},{label:'补款',value:4},{label:'质保金',value:5},{label:'其他',value:6}]
-const planStatusOptions=[{label:'未付',value:0},{label:'部分',value:1},{label:'已结清',value:2},{label:'逾期',value:3}]
-const invoiceTypeOptions=[{label:'销项发票',value:1},{label:'进项发票',value:2}]
-const invoiceStatusOptions=[{label:'待开票',value:1},{label:'已开票',value:2},{label:'已红冲',value:3},{label:'作废',value:4}]
-const rules={poNo:[{required:true,message:'请输入采购单号',trigger:'blur'}],supplierId:[{required:true,message:'请选择供应商',trigger:'change'}],poDate:[{required:true,message:'请选择采购日期',trigger:'change'}]}
+import {onMounted, reactive, ref} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {loadLookupData, lookupDefinitions} from '../api/lookups'
+import {
+  getPurchaseOrder,
+  updatePurchaseOrder,
+  getPurchaseItems,
+  createPurchaseItem,
+  updatePurchaseItem,
+  deletePurchaseItem,
+  getPurchasePlans,
+  createPurchasePlan,
+  updatePurchasePlan,
+  deletePurchasePlan,
+  getPurchaseInvoices
+} from '../api/purchaseDetail'
+
+const route = useRoute(), router = useRouter(), loading = ref(false), saving = ref(false), formRef = ref(null)
+const order = reactive({}), items = ref([]), plans = ref([]), invoices = ref([]), supplierOptions = ref([]),
+    staffOptions = ref([]), deptOptions = ref([]), materialOptions = ref([]), salesOrders = ref([])
+const itemDialog = ref(false), planDialog = ref(false), itemEditingId = ref(null), planEditingId = ref(null),
+    itemForm = reactive({}), planForm = reactive({})
+const purchaseTypeOptions = [{label: '面料', value: 1}, {label: '辅料', value: 2}, {
+  label: '包装',
+  value: 3
+}, {label: '外协', value: 4}]
+const purchaseStatusOptions = [{label: '待审', value: 1}, {label: '已审', value: 2}, {
+  label: '部分到货',
+  value: 3
+}, {label: '已到货', value: 4}, {label: '已入库', value: 5}, {label: '取消', value: 6}]
+const planNodeOptions = [{label: '预付款', value: 1}, {label: '到货款', value: 2}, {
+  label: '尾款',
+  value: 3
+}, {label: '补款', value: 4}, {label: '质保金', value: 5}, {label: '其他', value: 6}]
+const planStatusOptions = [{label: '未付', value: 0}, {label: '部分', value: 1}, {
+  label: '已结清',
+  value: 2
+}, {label: '逾期', value: 3}]
+const invoiceTypeOptions = [{label: '销项发票', value: 1}, {label: '进项发票', value: 2}]
+const invoiceStatusOptions = [{label: '待开票', value: 1}, {label: '已开票', value: 2}, {
+  label: '已红冲',
+  value: 3
+}, {label: '作废', value: 4}]
+const rules = {
+  poNo: [{required: true, message: '请输入采购单号', trigger: 'blur'}],
+  supplierId: [{required: true, message: '请选择供应商', trigger: 'change'}],
+  poDate: [{required: true, message: '请选择采购日期', trigger: 'change'}]
+}
 // 页面显示辅助函数：统一处理关联选项、枚举文本、金额格式和计划状态标签。
-const optionLabel=(k,i)=>lookupDefinitions[k].label(i),optionText=(o,v)=>o.find(x=>x.value===v)?.label||v,money=v=>v==null?'—':'¥'+Number(v).toFixed(2),planStatusType=v=>({0:'info',1:'warning',2:'success',3:'danger'}[v]||'info')
+const optionLabel = (k, i) => lookupDefinitions[k].label(i),
+    optionText = (o, v) => o.find(x => x.value === v)?.label || v,
+    money = v => v == null ? '—' : '¥' + Number(v).toFixed(2),
+    planStatusType = v => ({0: 'info', 1: 'warning', 2: 'success', 3: 'danger'}[v] || 'info')
 // 格式化物料下拉选项显示文本。
-const materialLabel=id=>{const x=materialOptions.value.find(i=>Number(i.id)===Number(id));return x?optionLabel('materials',x):'—'}
+const materialLabel = id => {
+  const x = materialOptions.value.find(i => Number(i.id) === Number(id));
+  return x ? optionLabel('materials', x) : '—'
+}
 // 格式化供应商下拉选项显示文本。
-const supplierLabel=id=>{const x=supplierOptions.value.find(i=>Number(i.id)===Number(id));return x?optionLabel('suppliers',x):''}
+const supplierLabel = id => {
+  const x = supplierOptions.value.find(i => Number(i.id) === Number(id));
+  return x ? optionLabel('suppliers', x) : ''
+}
+
 // 并行加载采购订单、明细、付款计划、发票和关联基础数据。
-async function loadAll(){loading.value=true;try{const id=route.params.id;const [o,i,p,v,sup,staff,dept,mat,orders]=await Promise.all([getPurchaseOrder(id),getPurchaseItems(id),getPurchasePlans(id),getPurchaseInvoices(id),loadLookupData('suppliers'),loadLookupData('staffs'),loadLookupData('depts'),loadLookupData('materials'),loadLookupData('orders')]);Object.keys(order).forEach(k=>delete order[k]);Object.assign(order,o.data.data||{});items.value=i.data.data||[];plans.value=p.data.data||[];invoices.value=v.data.data||[];supplierOptions.value=sup;staffOptions.value=staff;deptOptions.value=dept;materialOptions.value=mat;salesOrders.value=orders}catch(e){ElMessage.error(e?.response?.data?.message||e?.message||'加载采购详情失败')}finally{loading.value=false}}
+async function loadAll() {
+  loading.value = true;
+  try {
+    const id = route.params.id;
+    const [o, i, p, v, sup, staff, dept, mat, orders] = await Promise.all([getPurchaseOrder(id), getPurchaseItems(id), getPurchasePlans(id), getPurchaseInvoices(id), loadLookupData('suppliers'), loadLookupData('staffs'), loadLookupData('depts'), loadLookupData('materials'), loadLookupData('orders')]);
+    Object.keys(order).forEach(k => delete order[k]);
+    Object.assign(order, o.data.data || {});
+    items.value = i.data.data || [];
+    plans.value = p.data.data || [];
+    invoices.value = v.data.data || [];
+    supplierOptions.value = sup;
+    staffOptions.value = staff;
+    deptOptions.value = dept;
+    materialOptions.value = mat;
+    salesOrders.value = orders
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || e?.message || '加载采购详情失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 // 校验并保存当前采购订单基础信息。
-async function saveOrder(){const valid=await formRef.value?.validate().catch(()=>false);if(!valid)return;saving.value=true;try{await updatePurchaseOrder(order.id,order);ElMessage.success('采购订单已保存');await loadAll()}catch(e){ElMessage.error(e?.response?.data?.message||'保存失败')}finally{saving.value=false}}
+async function saveOrder() {
+  const valid = await formRef.value?.validate().catch(() => false);
+  if (!valid) return;
+  saving.value = true;
+  try {
+    await updatePurchaseOrder(order.id, order);
+    ElMessage.success('采购订单已保存');
+    await loadAll()
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
 // 打开新增订单明细对话框并初始化空白表单。
-function openItemCreate(){itemEditingId.value=null;Object.keys(itemForm).forEach(k=>delete itemForm[k]);Object.assign(itemForm,{poId:order.id,deptId:order.deptId,materialId:null,part:'整件',unit:'米',qty:0,price:0,amount:0,qtyReceived:0,arriveDate:'',remark:''});itemDialog.value=true}
+function openItemCreate() {
+  itemEditingId.value = null;
+  Object.keys(itemForm).forEach(k => delete itemForm[k]);
+  Object.assign(itemForm, {
+    poId: order.id,
+    deptId: order.deptId,
+    materialId: null,
+    part: '整件',
+    unit: '米',
+    qty: 0,
+    price: 0,
+    amount: 0,
+    qtyReceived: 0,
+    arriveDate: '',
+    remark: ''
+  });
+  itemDialog.value = true
+}
+
 // 打开明细编辑对话框并回填当前行数据。
-function openItemEdit(row){itemEditingId.value=row.id;Object.keys(itemForm).forEach(k=>delete itemForm[k]);Object.assign(itemForm,row);itemDialog.value=true}
+function openItemEdit(row) {
+  itemEditingId.value = row.id;
+  Object.keys(itemForm).forEach(k => delete itemForm[k]);
+  Object.assign(itemForm, row);
+  itemDialog.value = true
+}
+
 // 选择物料后自动带出物料计量单位。
-function syncMaterialUnit(id){const x=materialOptions.value.find(i=>Number(i.id)===Number(id));if(x)itemForm.unit=x.unit||itemForm.unit}
+function syncMaterialUnit(id) {
+  const x = materialOptions.value.find(i => Number(i.id) === Number(id));
+  if (x) itemForm.unit = x.unit || itemForm.unit
+}
+
 // 新增或修改采购明细并刷新明细列表。
-async function saveItem(){saving.value=true;try{if(itemEditingId.value)await updatePurchaseItem(itemEditingId.value,itemForm);else await createPurchaseItem(itemForm);ElMessage.success('采购明细已保存');itemDialog.value=false;const r=await getPurchaseItems(order.id);items.value=r.data.data||[]}catch(e){ElMessage.error(e?.response?.data?.message||'保存失败')}finally{saving.value=false}}
+async function saveItem() {
+  saving.value = true;
+  try {
+    if (itemEditingId.value) await updatePurchaseItem(itemEditingId.value, itemForm); else await createPurchaseItem(itemForm);
+    ElMessage.success('采购明细已保存');
+    itemDialog.value = false;
+    const r = await getPurchaseItems(order.id);
+    items.value = r.data.data || []
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
 // 确认后删除已保存明细并重新加载列表。
-async function removeItem(row){try{await ElMessageBox.confirm('确认删除该采购明细吗？','删除确认',{type:'warning'});await deletePurchaseItem(row.id);const r=await getPurchaseItems(order.id);items.value=r.data.data||[]}catch(e){if(e!=='cancel'&&e!=='close')ElMessage.error(e?.response?.data?.message||'删除失败')}}
+async function removeItem(row) {
+  try {
+    await ElMessageBox.confirm('确认删除该采购明细吗？', '删除确认', {type: 'warning'});
+    await deletePurchaseItem(row.id);
+    const r = await getPurchaseItems(order.id);
+    items.value = r.data.data || []
+  } catch (e) {
+    if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.response?.data?.message || '删除失败')
+  }
+}
+
 // 打开新增收款计划对话框并初始化空白表单。
-function openPlanCreate(){planEditingId.value=null;Object.keys(planForm).forEach(k=>delete planForm[k]);Object.assign(planForm,{planNo:'',deptId:order.deptId,direction:2,sourceType:2,sourceId:order.id,sourceNo:order.poNo,partnerType:2,partnerId:order.supplierId,partnerName:supplierLabel(order.supplierId),seqNo:plans.value.length+1,nodeType:1,ratio:null,planDate:'',planAmount:0,paidAmount:0,status:0,remark:''});planDialog.value=true}
+function openPlanCreate() {
+  planEditingId.value = null;
+  Object.keys(planForm).forEach(k => delete planForm[k]);
+  Object.assign(planForm, {
+    planNo: '',
+    deptId: order.deptId,
+    direction: 2,
+    sourceType: 2,
+    sourceId: order.id,
+    sourceNo: order.poNo,
+    partnerType: 2,
+    partnerId: order.supplierId,
+    partnerName: supplierLabel(order.supplierId),
+    seqNo: plans.value.length + 1,
+    nodeType: 1,
+    ratio: null,
+    planDate: '',
+    planAmount: 0,
+    paidAmount: 0,
+    status: 0,
+    remark: ''
+  });
+  planDialog.value = true
+}
+
 // 打开编辑收付款计划对话框并回填当前行。
-function openPlanEdit(row){planEditingId.value=row.id;Object.keys(planForm).forEach(k=>delete planForm[k]);Object.assign(planForm,row);planDialog.value=true}
+function openPlanEdit(row) {
+  planEditingId.value = row.id;
+  Object.keys(planForm).forEach(k => delete planForm[k]);
+  Object.assign(planForm, row);
+  planDialog.value = true
+}
+
 // 新增或修改付款计划并刷新计划列表。
-async function savePlan(){saving.value=true;try{if(planEditingId.value)await updatePurchasePlan(planEditingId.value,planForm);else await createPurchasePlan(planForm);ElMessage.success('付款计划已保存');planDialog.value=false;const r=await getPurchasePlans(order.id);plans.value=r.data.data||[]}catch(e){ElMessage.error(e?.response?.data?.message||'保存失败')}finally{saving.value=false}}
+async function savePlan() {
+  saving.value = true;
+  try {
+    if (planEditingId.value) await updatePurchasePlan(planEditingId.value, planForm); else await createPurchasePlan(planForm);
+    ElMessage.success('付款计划已保存');
+    planDialog.value = false;
+    const r = await getPurchasePlans(order.id);
+    plans.value = r.data.data || []
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
 // 确认后删除已保存收付款计划并重新加载列表。
-async function removePlan(row){try{await ElMessageBox.confirm('确认删除该付款计划吗？','删除确认',{type:'warning'});await deletePurchasePlan(row.id);const r=await getPurchasePlans(order.id);plans.value=r.data.data||[]}catch(e){if(e!=='cancel'&&e!=='close')ElMessage.error(e?.response?.data?.message||'删除失败')}}
+async function removePlan(row) {
+  try {
+    await ElMessageBox.confirm('确认删除该付款计划吗？', '删除确认', {type: 'warning'});
+    await deletePurchasePlan(row.id);
+    const r = await getPurchasePlans(order.id);
+    plans.value = r.data.data || []
+  } catch (e) {
+    if (e !== 'cancel' && e !== 'close') ElMessage.error(e?.response?.data?.message || '删除失败')
+  }
+}
+
 onMounted(loadAll)
 </script>
 
 <style scoped>
-.page-breadcrumb{margin:0 0 7px;color:#2b6cb0;font-size:12px}.detail-section{margin-bottom:14px}.detail-title{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #edf0f4}.detail-title>span{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:#eaf2fb;color:#2b6cb0;font-size:11px;font-weight:700}.detail-title strong{display:block;color:#1f3a5f;font-size:15px}.detail-title small{display:block;margin-top:3px;color:#98a2b3;font-size:11px}.detail-title.compact{margin:0;padding:0;border:0}.section-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;max-height:60vh;overflow-y:auto}.wide{grid-column:1/-1}.grid3 :deep(.el-form-item__label),.grid2 :deep(.el-form-item__label){justify-content:flex-start}@media(max-width:1050px){.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:680px){.grid3,.grid2{grid-template-columns:1fr}}
+.page-breadcrumb {
+  margin: 0 0 7px;
+  color: #2b6cb0;
+  font-size: 12px
+}
+
+.detail-section {
+  margin-bottom: 14px
+}
+
+.detail-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #edf0f4
+}
+
+.detail-title > span {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #eaf2fb;
+  color: #2b6cb0;
+  font-size: 11px;
+  font-weight: 700
+}
+
+.detail-title strong {
+  display: block;
+  color: #1f3a5f;
+  font-size: 15px
+}
+
+.detail-title small {
+  display: block;
+  margin-top: 3px;
+  color: #98a2b3;
+  font-size: 11px
+}
+
+.detail-title.compact {
+  margin: 0;
+  padding: 0;
+  border: 0
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap: 0 18px
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap: 0 18px;
+  max-height: 60vh;
+  overflow-y: auto
+}
+
+.wide {
+  grid-column: 1/-1
+}
+
+.grid3 :deep(.el-form-item__label), .grid2 :deep(.el-form-item__label) {
+  justify-content: flex-start
+}
+
+@media (max-width: 1050px) {
+  .grid3 {
+    grid-template-columns:repeat(2, minmax(0, 1fr))
+  }
+}
+
+@media (max-width: 680px) {
+  .grid3, .grid2 {
+    grid-template-columns:1fr
+  }
+}
 </style>

@@ -34,4 +34,19 @@ public class SmSample extends LogicEntity {
     private String courierNo;
     private Integer status;
     private String remark;
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private String orderNo; // 订单号
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private Long unitId; // 客户单位ID
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private String customerName; // 客户公司名称
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private String contactName; // 客户联系人
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private String contactPhone; // 客户电话
 }
