@@ -209,7 +209,7 @@ public class OdOrderFlowServiceImpl implements OdOrderFlowService {
         SysProcess process = processMapper.selectById(request.getProcessId());
         if (process == null) throw new BusinessValidationException("工序不存在");
         int stage = process.getProcessType() == null ? 0 : process.getProcessType();
-        if (stage < 1 || stage > 5) throw new BusinessValidationException("生产计划只能选择裁剪、缝制、剪线、整烫或包装工序");
+        if (stage < 1 || stage > 6) throw new BusinessValidationException("生产计划只能选择裁剪、缝制、剪线、整烫、包装或质检工序");
         BigDecimal planQty = request.getPlanQty() == null ? order.getQtyTotal() : request.getPlanQty();
         if (planQty == null || planQty.signum() < 0) throw new BusinessValidationException("计划数量不能小于0");
         String today = LocalDate.now().toString();

@@ -91,7 +91,8 @@ const menuGroups = [
       { label: '缝制任务', path: '/production/sewing', icon: SetUp },
       { label: '剪线任务', path: '/production/trimming', icon: SetUp },
       { label: '整烫任务', path: '/production/ironing', icon: SetUp },
-      { label: '包装任务', path: '/production/packing', icon: SetUp }
+      { label: '包装任务', path: '/production/packing', icon: SetUp },
+      { label: '质检任务', path: '/production/qc', icon: SetUp }
     ]
   },
   {

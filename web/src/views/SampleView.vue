@@ -150,13 +150,14 @@
     </el-dialog>
 
     <el-dialog v-model="attachmentVisible" title="样衣附件" width="920px" top="6vh" destroy-on-close>
-      <div v-if="attachmentSample && [1, 5].includes(attachmentSample.status)" class="attachment-toolbar">
+      <div v-if="attachmentSample && canEditAttachments" class="attachment-toolbar">
         <input ref="attachmentInputRef" type="file" multiple style="display:none" @change="onAttachmentFilesChange"/>
         <el-button type="primary" plain @click="attachmentInputRef?.click()">新增附件</el-button>
         <span v-if="attachmentFiles.length" class="selected-files">已选择 {{ attachmentFiles.length }} 个文件</span>
         <el-button type="primary" :loading="uploading" :disabled="!attachmentFiles.length" @click="uploadSelectedAttachments">上传选中文件</el-button>
       </div>
-      <el-table :data="attachments" border stripe empty-text="暂无附件">
+      <div v-else-if="attachmentSample" class="attachment-tip">当前样衣状态为{{ optionText(statusOptions, attachmentSample.status) }}，仅可查看附件。</div>
+      <el-table :data="attachments" border stripe empty-text="暂无附件" height="60vh">
         <el-table-column prop="versionNo" label="版本" width="75"/>
         <el-table-column prop="fileName" label="文件名" min-width="220"/>
         <el-table-column label="大小" width="110">
@@ -164,7 +165,7 @@
         </el-table-column>
         <el-table-column prop="uploadTime" label="上传时间" width="170"/>
         <el-table-column label="操作" width="140">
-          <template #default="{ row }"><a v-if="row.fileUrl" :href="row.fileUrl" target="_blank">查看</a><el-button link type="danger" @click="removeAttachment(row)">删除</el-button></template>
+          <template #default="{ row }"><a v-if="row.fileUrl" :href="row.fileUrl" target="_blank">查看</a><el-button v-if="canEditAttachments" link type="danger" @click="removeAttachment(row)">删除</el-button></template>
         </el-table-column>
       </el-table>
     </el-dialog>
@@ -211,6 +212,8 @@ const attachmentFiles = ref([])
 const attachments = ref([])
 const uploading = ref(false)
 const attachmentInputRef = ref(null)
+// 待制作、待修正状态可维护附件，其他状态（含待确认）仅允许查看。
+const canEditAttachments = computed(() => [1, 5].includes(attachmentSample.value?.status))
 const orderOptions = ref([])
 const orderItems = ref([])
 const styleOptionsList = ref([])

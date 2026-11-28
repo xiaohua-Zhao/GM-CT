@@ -7,7 +7,7 @@ import com.chengtai.fashionmgmt.module.pl.entity.PlProdPlan;
 
 /** 生产计划服务接口。 */
 public interface PlProdPlanService extends BaseService<PlProdPlan> {
-    /** 分页查询评审通过、样衣已放行、未完工且尚未排产的订单。 */
+    /** 分页查询评审通过、样衣已放行、待生产且未关闭、尚未创建生产计划的订单。 */
     IPage<OdOrder> pageEligibleOrders(long current, long size, String keyword, Long unitId,
                                       String orderDateStart, String orderDateEnd,
                                       String deliveryDateStart, String deliveryDateEnd);

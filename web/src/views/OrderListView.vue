@@ -32,6 +32,9 @@
     <section class="content-panel table-panel">
       <el-table v-loading="loading" :data="rows" border stripe row-key="id">
         <el-table-column label="订单号" width="155"><template #default="{ row }"><el-button link type="primary" @click="router.push('/orders/' + row.id)">{{ row.orderNo }}</el-button></template></el-table-column>
+        <el-table-column label="状态" width="125">
+          <template #default="{ row }"><el-tag :type="statusType(row.status)" effect="light">{{ optionText(statusOptions, row.status) }}</el-tag></template>
+        </el-table-column>
         <el-table-column label="客户" width="160">
           <template #default="{ row }">{{ unitLabel(row.unitId) }}</template>
         </el-table-column>
@@ -62,9 +65,7 @@
         <el-table-column label="已收定金" width="110">
           <template #default="{ row }">{{ money(row.depositAmount) }}</template>
         </el-table-column>
-        <el-table-column label="状态" width="125">
-          <template #default="{ row }"><el-tag :type="statusType(row.status)" effect="light">{{ optionText(statusOptions, row.status) }}</el-tag></template>
-        </el-table-column>
+
         <el-table-column label="放行" width="90">
           <template #default="{ row }"><el-tag :type="row.isProducible === 1 ? 'success' : 'info'">{{ row.isProducible === 1 ? '已放行' : '未放行' }}</el-tag></template>
         </el-table-column>

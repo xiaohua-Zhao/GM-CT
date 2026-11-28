@@ -5,6 +5,8 @@ import { createOne, deleteOne, getPage, updateOne } from './crud'
 export const getPlanPage = params => getPage('/pl/plans', params)
 // 查询可创建生产计划的订单。
 export const getEligibleOrders = params => http.get('/pl/plans/eligible-orders', { params })
+// 查询生产计划下的工序任务。
+export const getPlanTasks = prodPlanId => http.get('/pl/tasks/by-plan/' + prodPlanId)
 // 新建生产计划。
 export const createPlan = data => createOne('/pl/plans', data)
 // 修改生产计划。

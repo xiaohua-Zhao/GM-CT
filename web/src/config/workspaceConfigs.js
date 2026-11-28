@@ -37,7 +37,7 @@ const taskStatusOptions = [
 ]
 const processStageOptions = [
   { label: '裁剪', value: 1 }, { label: '缝制', value: 2 }, { label: '剪线', value: 3 },
-  { label: '整烫', value: 4 }, { label: '包装', value: 5 }
+  { label: '整烫', value: 4 }, { label: '包装', value: 5 }, { label: '质检', value: 6 }
 ]
 const qcStatusOptions = [
   { label: '未检', value: 0 }, { label: '待检', value: 1 }, { label: '已检合格', value: 2 },
@@ -97,7 +97,8 @@ const taskStageDefinitions = [
   { key: 'sewing-tasks', label: '后道缝制', stage: 2, description: '维护缝制工序任务、组长和生产进度' },
   { key: 'trimming-tasks', label: '剪线工序', stage: 3, description: '维护剪线工序任务和完成数量' },
   { key: 'ironing-tasks', label: '整烫工序', stage: 4, description: '维护整烫工序任务和质检信息' },
-  { key: 'packing-tasks', label: '包装工序', stage: 5, description: '维护包装工序任务和完成情况' }
+  { key: 'packing-tasks', label: '包装工序', stage: 5, description: '维护包装工序任务和完成情况' },
+  { key: 'qc-tasks', label: '质检工序', stage: 6, description: '维护质检工序任务、质检状态和抽检数量' }
 ]
 
 const extraBusinessConfigs = [
@@ -736,6 +737,7 @@ export function workspacePathForKey(key) {
   if (key === 'trimming-tasks') return '/production/trimming'
   if (key === 'ironing-tasks') return '/production/ironing'
   if (key === 'packing-tasks') return '/production/packing'
+  if (key === 'qc-tasks') return '/production/qc'
   if (key === 'prod-tasks') return '/production/tasks'
   if (workspaceDefinitions.production.tabs.some(tab => tab.key === key)) return '/production'
   if (workspaceDefinitions.misc.tabs.some(tab => tab.key === key)) return '/misc'

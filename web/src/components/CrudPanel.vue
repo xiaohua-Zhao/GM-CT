@@ -237,9 +237,8 @@ const entityNames = {
   'style-processes': '款式工序', 'style-materials': '款式用料', attachments: '附件',
   orders: '订单', 'order-items': '订单明细', 'purchase-orders': '采购订单', 'purchase-items': '采购明细',
   'misc-orders': '其他订单', 'misc-order-items': '其他订单明细',
-  'prod-plans': '生产计划', 'prod-tasks': '工序任务', 'cutting-tasks': '裁剪任务',
-  'sewing-tasks': '缝制任务', 'trimming-tasks': '剪线任务', 'ironing-tasks': '整烫任务',
-  'packing-tasks': '包装任务'
+  'prod-plans': '生产计划', 'prod-tasks': '工序任务', 'cutting-tasks': '裁剪任务', 'sewing-tasks': '缝制任务', 'trimming-tasks': '剪线任务', 'ironing-tasks': '整烫任务',
+  'packing-tasks': '包装任务', 'qc-tasks': '质检任务'
 }
 const entityName = computed(() => entityNames[props.config.key] || props.config.title.replace('管理', ''))
 const createButtonLabel = computed(() => props.config.createLabel || '新增' + entityName.value)

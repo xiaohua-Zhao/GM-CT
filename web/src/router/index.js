@@ -36,6 +36,7 @@ const routes = [
   { path: '/production/trimming', name: 'production-trimming', component: ModuleView, props: { workspace: 'production', configKey: 'trimming-tasks' }, meta: { title: '剪线任务' } },
   { path: '/production/ironing', name: 'production-ironing', component: ModuleView, props: { workspace: 'production', configKey: 'ironing-tasks' }, meta: { title: '整烫任务' } },
   { path: '/production/packing', name: 'production-packing', component: ModuleView, props: { workspace: 'production', configKey: 'packing-tasks' }, meta: { title: '包装任务' } },
+  { path: '/production/qc', name: 'production-qc', component: ModuleView, props: { workspace: 'production', configKey: 'qc-tasks' }, meta: { title: '质检任务' } },
   { path: '/production/tasks', name: 'production-tasks', component: ModuleView, props: { workspace: 'production', configKey: 'prod-tasks' }, meta: { title: '全部工序任务' } },
   { path: '/misc', name: 'misc', component: WorkspaceView, props: { workspace: 'misc' }, meta: { title: '其他订单管理' } },
   { path: '/finance', name: 'finance', component: WorkspaceView, props: { workspace: 'finance' }, meta: { title: '财务管理' } },

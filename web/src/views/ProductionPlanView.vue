@@ -49,9 +49,14 @@
               <template #append><el-button :disabled="!!editingId" @click="openOrderPicker">选择订单</el-button></template>
             </el-input>
           </el-form-item>
+          <el-form-item label="生产工序" required>
+            <el-select v-model="form.processStage" style="width:100%" placeholder="请选择一个生产工序">
+              <el-option v-for="item in processStageOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </el-form-item>
           <el-form-item label="归属部门"><el-select v-model="form.deptId" clearable filterable style="width:100%"><el-option v-for="item in deptOptions" :key="item.id" :label="item.deptName" :value="item.id" /></el-select></el-form-item>
           <el-form-item label="计划人"><el-select v-model="form.plannerId" clearable filterable style="width:100%"><el-option v-for="item in staffOptions" :key="item.id" :label="item.staffName + '（' + item.staffCode + '）'" :value="item.id" /></el-select></el-form-item>
-          <el-form-item label="生产数量"><el-input v-model="form.prodQty" inputmode="decimal" @blur="normalizeNumber('prodQty')" /></el-form-item>
+          <el-form-item label="生产数量"><el-input v-model="form.prodQty" inputmode="numeric" @input="onIntegerInput('prodQty')" @blur="normalizeNumber('prodQty')" /></el-form-item>
           <el-form-item label="计划状态"><el-select v-model="form.status" style="width:100%"><el-option v-for="item in planStatusOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
           <el-form-item label="计划开工" required><el-date-picker v-model="form.startDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item>
           <el-form-item label="计划完工" required><el-date-picker v-model="form.endDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item>
@@ -92,7 +97,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getPlanPage, getEligibleOrders, createPlan, updatePlan, deletePlan } from '../api/productionPlans'
+import { getPlanPage, getEligibleOrders, getPlanTasks, createPlan, updatePlan, deletePlan } from '../api/productionPlans'
 import { getOrderFlow } from '../api/orderDetail'
 import { loadLookupData } from '../api/lookups'
 
@@ -119,7 +124,8 @@ const form = reactive({})
 const filters = reactive({ keyword: '', status: null })
 const orderFilters = reactive({ keyword: '', unitId: null, orderDateStart: '', orderDateEnd: '', deliveryDateStart: '', deliveryDateEnd: '' })
 const planStatusOptions = [{ label: '待下达', value: 1 }, { label: '已下达', value: 2 }, { label: '生产中', value: 3 }, { label: '已完工', value: 4 }, { label: '暂停', value: 5 }, { label: '取消', value: 6 }]
-const orderStatusOptions = [{ label: '初始', value: 1 }, { label: '待样衣/待排产', value: 2 }, { label: '生产中', value: 3 }, { label: '部分交付', value: 4 }, { label: '已完成', value: 5 }, { label: '延期', value: 6 }, { label: '暂停', value: 7 }, { label: '关闭', value: 8 }]
+const processStageOptions = [{ label: '裁剪', value: 1 }, { label: '缝制', value: 2 }, { label: '剪线', value: 3 }, { label: '整烫', value: 4 }, { label: '包装', value: 5 }, { label: '质检', value: 6 }]
+const orderStatusOptions = [{ label: '初始', value: 1 }, { label: '已审核', value: 2 }, { label: '生产中', value: 3 }, { label: '部分交付', value: 4 }, { label: '已完成', value: 5 }, { label: '延期', value: 6 }, { label: '暂停', value: 7 }, { label: '已关闭', value: 8 }, { label: '待复议', value: 9 }, { label: '样衣生成中', value: 10 }, { label: '待生产', value: 11 }]
 const orderNoMap = ref({})
 const orderMap = ref({})
 
@@ -158,14 +164,19 @@ async function openEdit(row) {
   editingId.value = row.id
   Object.keys(form).forEach(key => delete form[key])
   Object.assign(form, row)
+  // 生产工序直接取计划表保存的值；历史计划没有该字段时，回退到工序任务上的阶段。
+  form.processStage = row.prodProcess ?? null
   selectedOrder.value = { id: row.orderId, orderNo: orderNoMap.value[row.orderId] || String(row.orderId) }
   try { const r = await getOrderFlow(row.orderId); orderInfo.value = r.data?.data?.order || null; selectedOrder.value = { ...selectedOrder.value, ...orderInfo.value } } catch {}
+  if (form.processStage == null) {
+    try { const r = await getPlanTasks(row.id); form.processStage = r.data?.data?.[0]?.processStage ?? null } catch {}
+  }
   planVisible.value = true
 }
 // 重置新增生产计划表单。
 function resetForm() {
   Object.keys(form).forEach(key => delete form[key])
-  Object.assign(form, { prodPlanNo: '', orderId: null, deptId: null, prodQty: 0, startDate: '', endDate: '', status: 1, plannerId: null, releaseBy: null, releaseTime: '', remark: '' })
+  Object.assign(form, { prodPlanNo: '', orderId: null, processStage: null, deptId: null, prodQty: 0, startDate: '', endDate: '', status: 1, plannerId: null, releaseBy: null, releaseTime: '', remark: '' })
 }
 // 打开可生产订单选择弹框。
 function openOrderPicker() {
@@ -194,22 +205,28 @@ function confirmOrder() {
   form.orderId = order.id
   form.orderNo = order.orderNo
   form.deptId = order.deptId || form.deptId
-  form.prodQty = order.qtyTotal ?? form.prodQty
+  form.prodQty = order.qtyTotal != null ? Math.trunc(Number(order.qtyTotal)) : form.prodQty
   form.startDate = order.startDate || form.startDate
   form.endDate = order.deliveryDatePlan || form.endDate
   orderPickerVisible.value = false
 }
-// 规范化生产数量。
-function normalizeNumber(field) { const value = Number(form[field]); form[field] = Number.isFinite(value) && value >= 0 ? value : 0 }
+// 生产数量只允许输入整数，实时过滤小数点和非数字字符。
+function onIntegerInput(field) { form[field] = String(form[field] ?? '').replace(/\D/g, '') }
+// 规范化生产数量为不小于 0 的整数。
+function normalizeNumber(field) { const value = Number(form[field]); form[field] = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0 }
 // 保存生产计划。
 async function savePlan() {
   if (!form.orderId) return ElMessage.warning('请通过弹框选择订单')
+  if (!form.processStage) return ElMessage.warning('请选择一个生产工序')
   if (!form.startDate || !form.endDate) return ElMessage.warning('请选择计划开工和完工日期')
   if (form.endDate < form.startDate) return ElMessage.warning('计划完工日不能早于开工日')
   normalizeNumber('prodQty')
   saving.value = true
   try {
-    const response = editingId.value ? await updatePlan(editingId.value, form) : await createPlan(form)
+    // 后端按 processStages 生成/同步工序任务，单选时只传当前工序。
+    const { processStage, ...rest } = form
+    const payload = { ...rest, processStages: processStage ? [processStage] : [] }
+    const response = editingId.value ? await updatePlan(editingId.value, payload) : await createPlan(payload)
     if (response.data?.code !== 0) throw new Error(response.data?.message || '保存生产计划失败')
     ElMessage.success('生产计划保存成功'); planVisible.value = false; await load()
   } catch (error) { ElMessage.error(error?.response?.data?.message || error.message || '保存生产计划失败') }
@@ -246,5 +263,5 @@ onMounted(() => { loadOptions(); load() })
 </script>
 
 <style scoped>
-.order-breadcrumb{margin:0 0 7px;color:#2b6cb0;font-size:12px}.filter-panel,.picker-filters{display:flex;flex-wrap:wrap;gap:10px}.filter-panel{margin-bottom:14px}.picker-filters{margin-bottom:14px}.table-panel{padding:0}.pager{margin:16px}.plan-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}.plan-wide{grid-column:1/-1}@media(max-width:800px){.plan-form-grid{grid-template-columns:1fr}.plan-wide{grid-column:auto}}
+.order-breadcrumb{margin:0 0 7px;color:#2b6cb0;font-size:12px}.filter-panel,.picker-filters{display:flex;flex-wrap:wrap;gap:10px}.filter-panel{margin-bottom:14px}.picker-filters{margin-bottom:14px}.table-panel{padding:0}.pager{margin:16px}.plan-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}.plan-wide{grid-column:1/-1}.form-tip{margin-top:4px;color:#909399;font-size:12px;line-height:1.4}@media(max-width:800px){.plan-form-grid{grid-template-columns:1fr}.plan-wide{grid-column:auto}}
 </style>

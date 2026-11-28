@@ -178,8 +178,8 @@ public class PlTaskServiceImpl extends AbstractBaseService<PlTaskMapper, PlTask>
         if (planMapper.selectById(entity.getProdPlanId()) == null) {
             throw new BusinessValidationException("生产计划不存在");
         }
-        if (entity.getProcessStage() == null || entity.getProcessStage() < 1 || entity.getProcessStage() > 5) {
-            throw new BusinessValidationException("工序阶段必须在裁剪、缝制、剪线、整烫、包装之间");
+        if (entity.getProcessStage() == null || entity.getProcessStage() < 1 || entity.getProcessStage() > 6) {
+            throw new BusinessValidationException("工序阶段必须在裁剪、缝制、剪线、整烫、包装、质检之间");
         }
         if (entity.getQtyPlan().signum() < 0 || entity.getQtyDone().signum() < 0) {
             throw new BusinessValidationException("计划数量和完成数量不能小于0");
